@@ -1,5 +1,5 @@
 # 08 — Requirements Prioritization and Traceability
-> **Update:** the project now has **4 weeks**. The priorities and schedule in [REQUIREMENTS_ENGINEERING.md §13](../REQUIREMENTS_ENGINEERING.md) and [11-team-plan.md](11-team-plan.md) replace the ones in this file where they differ.
+> **Update:** the project now has **4 weeks**. The priorities and schedule in [REQUIREMENTS_ENGINEERING.md §13](../REQUIREMENTS_ENGINEERING.md) replaces the ones in this file where they differ.
 
 
 > Deliverables 24–25.

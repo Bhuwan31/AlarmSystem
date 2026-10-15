@@ -23,7 +23,6 @@ Prototype stack: Supabase (PostgreSQL + PostGIS, Auth, Realtime, Storage) · Pyt
 | 24–25 | MoSCoW prioritization, Traceability matrix | [08-prioritization-and-traceability.md](08-prioritization-and-traceability.md) |
 | §15, 27 | RE process, Ethics | [09-re-process-and-ethics.md](09-re-process-and-ethics.md) |
 | 28–33 | Prototype plan, Validation, Testing, Evaluation, Future work, Limitations, Conclusion | [10-prototype-validation-testing-conclusion.md](10-prototype-validation-testing-conclusion.md) |
-| — | Team roles, weekly plan, working rules | [11-team-plan.md](11-team-plan.md) |
 
 ## Requirement ID scheme
 - `FR-01..FR-67` functional · `NFR-PF/A/R/U/SC/M/I` non-functional · `SR-01..SR-12` safety · `NFR-S1..S9` security · `NFR-PR1..PR8` privacy
