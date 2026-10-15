@@ -5,7 +5,7 @@
 ## Use Case Overview
 
 ```
-             ┌──────────────────────── AMHEWS-Nepal ─────────────────────────┐
+             ┌──────────────────────── AMHEWS ─────────────────────────┐
  Citizen ────┤ UC-01 Receive flood warning      UC-04 Find nearest shelter   │
  (Tourist,   │ UC-02 Check local risk level     UC-05 Report flooding        │
   Volunteer) │ UC-03 Request evacuation guidance                             │
@@ -187,7 +187,7 @@ Format: *As a ⟨role⟩, I want ⟨goal⟩ so that ⟨benefit⟩.* Acceptance i
 
 | ID | Story | Req | Pri |
 |---|---|---|---|
-| US-01 | As a riverside resident, I want a warning in Nepali on my phone when my ward is at risk, so that I can move my family early. | FR-30 | M |
+| US-01 | As a riverside resident, I want a warning in my own language (pilot: Nepali) on my phone when my ward is at risk, so that I can move my family early. | FR-30 | M |
 | US-02 | As a feature-phone user, I want warnings by SMS, so that I get them without internet. | FR-35 | M |
 | US-03 | As a son working abroad, I want to subscribe to my father's ward, so that I can call him when danger rises. | FR-32 | S |
 | US-04 | As a citizen, I want to see why my area is at risk, so that I can trust the warning. | FR-14 | M |

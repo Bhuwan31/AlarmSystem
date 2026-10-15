@@ -1,5 +1,7 @@
 # 02 — Stakeholder Analysis, Goals and Personas
 
+> **Global product, Nepal pilot.** AMHEWS is designed for any country or region. Nepal is the **first pilot deployment (testing ground)**. Nepal-specific organisations, languages, laws and numbers in this document describe the pilot's *Deployment Profile* (FR-68), not limits of the product. See [REQUIREMENTS_ENGINEERING.md §1.2.1](../REQUIREMENTS_ENGINEERING.md).
+
 > Deliverables 10–12. Tags: **[F]** fact, **[A]** assumption, **[D]** design decision (see `01-project-overview.md`).
 >
 > Note on official mandates: roles of government bodies below are summarized from the *Disaster Risk Reduction and Management Act, 2074 (2017)* and the *Local Government Operation Act, 2074 (2017)* **[F — verify wording against the Acts]**. Anything about *how* those bodies would use this system is **[A]** until confirmed by elicitation.
@@ -166,7 +168,7 @@ G0  Reduce human impact of floods (casualties, injuries, evacuation delay, misin
                                      │ pull / push (adapters)
  ┌──────────────┐  reports  ┌────────▼────────────────────────────────┐  alerts   ┌───────────────────┐
  │ Citizens,    │──────────►│                                         │──────────►│ Channels:         │
- │ volunteers,  │◄──────────│        AMHEWS-Nepal (system boundary)   │           │ Web push / PWA    │
+ │ volunteers,  │◄──────────│        AMHEWS (system boundary)   │           │ Web push / PWA    │
  │ tourists     │ risk,     │                                         │           │ SMS gateway (sim) │
  └──────────────┘ guidance  │  ingest → validate → assess → propose   │           │ Email             │
                             │  → approve → disseminate → log          │           │ Siren/IVR (sim)   │

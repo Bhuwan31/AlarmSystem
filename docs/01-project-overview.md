@@ -6,7 +6,7 @@
 >
 > | Tag | Meaning |
 > |---|---|
-> | **[F]** Verified fact | Stated by a cited primary/authoritative source (see `07-nepal-context-and-adaptive-design.md` §Facts Register). The team must re-check the figure against the source before submission. |
+> | **[F]** Verified fact | Stated by a cited primary/authoritative source (see `07-pilot-context-nepal-and-adaptive-design.md` §Facts Register). The team must re-check the figure against the source before submission. |
 > | **[A]** Project assumption | Believed reasonable but not verified; must be validated during elicitation. |
 > | **[D]** Design decision | A choice this project makes; it is a requirement or architecture decision, not a claim about the world. |
 > | **[T]** Prototype acceptance target | A numeric target used only to accept/reject the *prototype* in a lab setting. It is **not** a real-world performance guarantee. |
@@ -15,12 +15,12 @@
 
 ## 1. Project Title
 
-**Adaptive Multi-Hazard Early Warning and Evacuation Support System for Nepal**
-Short name used in documents: **AMHEWS-Nepal** (prototype codename: *Sajag* — "alert/vigilant" in Nepali) **[D]**
+**Adaptive Multi-Hazard Early Warning and Evacuation Support System**
+Short name: **AMHEWS** · Global by design · **First pilot deployment: Nepal** (prototype codename: *Sajag* — "alert/vigilant" in Nepali) **[D]**
 
 ## 2. Abstract
 
-Nepal is exposed to recurrent floods, landslides, earthquakes and other hazards, and its geography, monsoon climate and uneven communication infrastructure make timely, localized warning difficult **[F]**. Software cannot prevent these hazards, but it can help reduce their human impact by shortening the time between a dangerous condition being observable in data and the moment an at-risk person knows what to do.
+Floods, landslides and earthquakes threaten communities worldwide, and the hardest places to warn are those with steep terrain, seasonal extreme rainfall, uneven communication infrastructure and many languages. AMHEWS is a **country-agnostic** system: everything that differs between places comes from a configurable Deployment Profile. Its **first pilot deployment is Nepal**, which combines all of these difficulties **[F]** and is therefore a demanding testing ground. Software cannot prevent these hazards, but it can help reduce their human impact by shortening the time between a dangerous condition being observable in data and the moment an at-risk person knows what to do.
 
 This project applies a full Requirements Engineering (RE) lifecycle to the design of an *adaptive* early warning and evacuation support system. The first hazard modelled is **riverine flooding**; the architecture is hazard-agnostic so that landslide and earthquake modules can be added later through configuration and plug-in components rather than redesign.
 
@@ -28,7 +28,10 @@ The work produces: a stakeholder analysis covering 24 stakeholder groups; person
 
 A semester-scale prototype (Python/FastAPI backend, Supabase/PostgreSQL+PostGIS database, Next.js/React frontend) uses simulated river-gauge and rainfall data plus public APIs to demonstrate threshold-based risk classification, a human-in-the-loop warning workflow, localized multilingual alerts, shelter lookup and hazard-aware evacuation routing, and degraded-mode operation. The system is explicitly positioned as **decision support** for authorities and communities — not as a guaranteed predictor and not as a replacement for official government warning channels.
 
-## 3. Background
+## 3. Background (pilot context: Nepal)
+
+The product is global; the background below describes the first pilot country.
+
 
 - Nepal's territory rises from the low-lying Terai plains in the south to the Himalaya in the north over a short north–south distance; major river systems (Koshi, Gandaki/Narayani, Karnali, Mahakali) drain from the mountains into the Terai and on to India **[F]**.
 - Most annual rainfall falls during the summer monsoon (roughly June–September) **[F]**, which is when most flood and landslide disasters occur **[F]**.
@@ -38,7 +41,7 @@ A semester-scale prototype (Python/FastAPI backend, Supabase/PostgreSQL+PostGIS 
 
 ## 4. Problem Statement
 
-People in flood-exposed areas of Nepal can receive warnings that are **late, too general, hard to understand, not actionable, or not received at all**, especially where connectivity is weak, literacy or language differs from the warning language, or the person has a disability **[A — to be validated through elicitation; supported qualitatively by post-event reviews]**. Authorities, in turn, must make high-stakes decisions (escalate? evacuate? which shelter? which road?) from fragmented data sources of uneven reliability, under time pressure.
+People in flood-exposed areas — in the Nepal pilot and in many similar regions worldwide — can receive warnings that are **late, too general, hard to understand, not actionable, or not received at all**, especially where connectivity is weak, literacy or language differs from the warning language, or the person has a disability **[A — to be validated through elicitation; supported qualitatively by post-event reviews]**. Authorities, in turn, must make high-stakes decisions (escalate? evacuate? which shelter? which road?) from fragmented data sources of uneven reliability, under time pressure.
 
 The RE problem is therefore not "predict floods with ML", but:
 
@@ -52,7 +55,7 @@ The RE problem is therefore not "predict floods with ML", but:
 
 ## 6. Research Questions
 
-**Core RQ:** How can an adaptive software-based early warning and evacuation support system reduce the human impact of floods in Nepal by providing timely, reliable, localized, and actionable risk information to communities and emergency authorities?
+**Core RQ:** How can an adaptive, globally deployable software-based early warning and evacuation support system reduce the human impact of floods by providing timely, reliable, localized and actionable risk information to communities and emergency authorities — evaluated through a first pilot deployment in Nepal?
 
 | # | Theme | Supporting research question | Answered mainly in |
 |---|---|---|---|
@@ -88,7 +91,8 @@ Objectives are split into **system objectives** (what the designed system should
 | SO-7 | Recommend safer routes | 0 recommended routes intersect an active hazard polygon or closed segment in the test suite **[T]** |
 | SO-8 | Account for closures, bridges, water levels | Route engine consumes closure + hazard layers; updated route within ≤ 60 s of a closure being recorded **[T]** |
 | SO-9 | Support multiple stakeholders | Role-specific views for ≥ 4 roles (citizen, local authority, district/national operator, admin) |
-| SO-10 | Nepali + English | 100 % of citizen-facing UI strings and message templates available in both; language pack architecture for more |
+| SO-10 | Any language via language packs (pilot: Nepali + English) | 100 % of citizen-facing strings and templates available in every configured language; English fallback |
+| SO-17 | Global by design | All country-specific values come from a Deployment Profile (FR-68); a second test profile works without code change |
 | SO-11 | Accessibility & low literacy | WCAG 2.2 AA on citizen pages (automated + manual check); icon+colour+text+audio redundancy for levels |
 | SO-12 | Unreliable connectivity | Citizen app shows last-known risk, shelters and instructions offline (PWA cache); SMS fallback path demonstrated (simulated gateway) |
 | SO-13 | Minimize false alarms, prioritize safety | False-negative rate **= 0** on the scripted safety-critical scenarios; false-positive rate reported and reviewed (no hard target, see Conflict C1) |
@@ -114,7 +118,7 @@ Objectives are split into **system objectives** (what the designed system should
 2. **Data:** simulated river-level and rainfall streams (scenario player); public weather forecast API (e.g. Open-Meteo); optional public flood forecast (GloFAS via Open-Meteo Flood API); OpenStreetMap roads; public admin boundaries (e.g. HDX/Survey Department datasets); seeded shelter list.
 3. **Risk engine:** transparent, rule/threshold-based classification with configurable thresholds per gauge and per area, rate-of-rise rule, data-quality gating, and confidence flag.
 4. **Warning workflow:** auto-proposal → human approval (two-person rule for Critical) → dissemination → acknowledgement → update/escalation → cancellation; contradiction prevention.
-5. **Notification:** web push, in-app, email (dev), **simulated SMS gateway** and simulated siren/loudspeaker endpoint; message templates in Nepali and English with icons.
+5. **Notification:** web push, in-app, email (dev), **simulated SMS gateway** and simulated siren/loudspeaker endpoint; message templates in every configured language (pilot: Nepali and English) with icons.
 6. **Evacuation:** shelter lookup by distance/capacity/accessibility; hazard-aware routing on an OSM road graph with closures and flooded segments removed; alternative route.
 7. **Citizen PWA:** risk map, current level, instructions, shelters, route, report conditions (with photo optional), offline cache, accessibility features.
 8. **Authority dashboard:** monitoring map, approvals queue, manual alert, shelter management, incident/report triage, delivery stats.

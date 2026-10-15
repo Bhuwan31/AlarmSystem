@@ -30,7 +30,7 @@ Rule of thumb: score ≥ 2.2 → Must; 1.6–2.2 → Should; 1.0–1.6 → Could
 | Offline cache, status page | FR-47, 48 | Degraded operation is a key objective |
 | Dashboard monitor, list, manual alert, shelter update, report triage, delivery stats | FR-51..53, 55..57 | Authority stakeholder needs |
 | Audit log | FR-59 | Accountability/SO-15 |
-| Admin config (regions, thresholds w/ 2-person, templates, users, policies) | FR-63..67 | Adaptive design is in title |
+| Admin config (regions, thresholds w/ 2-person, templates, users, policies) | FR-63..68 | Adaptive design is in title |
 | All SR-01..SR-12; core NFRs (PF1–3, R1–4, U1–4, SC1–3, M2–4, I2–3, I5, S1–6, S9, PR1–4, PR6–7) | — | Safety, security, privacy baselines |
 
 ### Should Have (important; included if time allows, planned for sprint 5–6)

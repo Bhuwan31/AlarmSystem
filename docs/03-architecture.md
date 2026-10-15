@@ -1,5 +1,7 @@
 # 03 — System Context and High-Level Architecture
 
+> **Global product, Nepal pilot.** AMHEWS is designed for any country or region. Nepal is the **first pilot deployment (testing ground)**. Nepal-specific organisations, languages, laws and numbers in this document describe the pilot's *Deployment Profile* (FR-68), not limits of the product. See [REQUIREMENTS_ENGINEERING.md §1.2.1](../REQUIREMENTS_ENGINEERING.md).
+
 > Deliverables 13–14 (context is also drawn in `02` §6). Tech stack fixed by the team: **Supabase** (PostgreSQL + PostGIS, Auth, Realtime, Storage), **Python** backend (FastAPI), **Next.js / React** frontend. All stack choices are **[D]**.
 
 ## 1. Architectural Drivers
@@ -225,7 +227,7 @@ Scheduler(60s) → SimGaugeAdapter.fetch → observations(GOOD)
 | Condition | Behaviour |
 |---|---|
 | Citizen offline | PWA service worker caches: last risk state for subscribed areas (with timestamp), action cards, shelter list, simplified route map tiles for the area, emergency numbers. UI shows "Last updated hh:mm — may be outdated". |
-| Citizen has SMS but no data | SMS channel (simulated gateway with production-shaped API) sends compact template ≤ 160 GSM-7 chars in English or ≤ 70 UCS-2 chars per segment for Nepali (Devanagari requires UCS-2 **[F]**) — templates designed for 2 segments max. |
+| Citizen has SMS but no data | SMS channel (simulated gateway with production-shaped API) sends compact template ≤ 160 GSM-7 chars in English or ≤ 70 UCS-2 chars per segment for non-Latin scripts such as Nepali Devanagari (UCS-2 **[F]**) — templates designed for 2 segments max. |
 | Backend down | Static emergency page on CDN (Vercel) with last published warnings snapshot (exported every minute to Supabase Storage/public JSON); operators fall back to manual SOP (phone/radio) — documented in runbook. |
 | External API down | Adapter marks source stale; engine uses remaining sources + R8; dashboard shows degraded sources. |
 | Database down | FastAPI returns 503 + cached last-known public state from in-memory cache; Supabase PITR for recovery. |
@@ -240,7 +242,7 @@ Scheduler(60s) → SimGaugeAdapter.fetch → observations(GOOD)
 | Routing | **OSMnx + NetworkX** in backend (graph cached per region) | pgRouting, OSRM, GraphHopper | Simplest to make hazard-aware (remove edges on the fly) and to test. Slower on big graphs → acceptable for one district; revisit with pgRouting/OSRM for national scale. |
 | Frontend | **Next.js 15 App Router**, TypeScript, **MapLibre GL** + OSM tiles, **next-intl**, PWA via Serwist/Workbox, Tailwind | Leaflet, i18next | MapLibre handles vector styling of risk layers; next-intl gives ICU messages incl. Nepali numerals. |
 | Auth | Supabase Auth (email OTP / password + **TOTP MFA** for operators/admins) | Keycloak | Built-in, RLS-integrated. |
-| Notifications | Web Push (VAPID, `pywebpush`), email (SMTP dev), **SMS & siren simulators** behind `ChannelAdapter` | Twilio, local aggregator | Real SMS in Nepal requires an aggregator/operator agreement **[A]**; adapter interface makes swap trivial. |
+| Notifications | Web Push (VAPID, `pywebpush`), email (SMTP dev), **SMS & siren simulators** behind `ChannelAdapter` | Twilio, local aggregator | Real SMS in any country (incl. the Nepal pilot) requires an aggregator or operator agreement **[A]**; adapter interface makes swap trivial. |
 | Hosting | Frontend: Vercel; Backend: Render/Fly.io/Railway (1–2 instances); DB: Supabase | Self-host | Free/cheap; adequate for demo. |
 | Alert format | **CAP 1.2** export | Custom JSON only | International standard for public warning interop (ITU-T X.1303) **[F]**. |
 
@@ -248,7 +250,7 @@ Scheduler(60s) → SimGaugeAdapter.fetch → observations(GOOD)
 
 | Quantity | Prototype assumption [A] | National-scale thought experiment [A] |
 |---|---|---|
-| Area units | ~50 wards in 1–2 municipalities | ~6,700 wards nationwide **[F: Nepal has 6,743 wards — verify]** |
+| Area units | ~50 wards in 1–2 pilot municipalities | Pilot country scale: Nepal has 6,743 wards **[F]**; multi-country deployments add one profile per country |
 | Stations | 3–6 simulated | Hundreds of DHM stations |
 | Subscribers | ≤ 1,000 synthetic | Millions → SMS/cell-broadcast via operators, not app push |
 | Observation rate | 1/min/station | Same order; ingestion trivial |

@@ -1,4 +1,6 @@
-# 07 — Nepal-Specific Considerations and Adaptive Design
+# 07 — Pilot Context (Nepal) and Global Adaptive Design
+
+> **Global product, Nepal pilot.** AMHEWS is designed for any country or region. Nepal is the **first pilot deployment (testing ground)**. Nepal-specific organisations, languages, laws and numbers in this document describe the pilot's *Deployment Profile* (FR-68), not limits of the product. See [REQUIREMENTS_ENGINEERING.md §1.2.1](../REQUIREMENTS_ENGINEERING.md).
 
 > Sections 11–12 of the brief. Every statement is tagged **[F]** verified fact (with source in the Facts Register), **[A]** project assumption, or **[D]** design decision.
 >

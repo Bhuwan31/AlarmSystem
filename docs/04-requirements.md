@@ -1,5 +1,7 @@
 # 04 — Requirements Specification
 
+> **Global product, Nepal pilot.** AMHEWS is designed for any country or region. Nepal is the **first pilot deployment (testing ground)**. Nepal-specific organisations, languages, laws and numbers in this document describe the pilot's *Deployment Profile* (FR-68), not limits of the product. See [REQUIREMENTS_ENGINEERING.md §1.2.1](../REQUIREMENTS_ENGINEERING.md).
+
 > Deliverables 15–19. Format follows IEEE/ISO/IEC 29148 attributes (ID, statement, source, priority, rationale, verifiable acceptance criterion).
 >
 > - "**shall**" = mandatory; "**should**" = desirable. One requirement per statement.
@@ -65,7 +67,7 @@
 | FR-32 | The system shall allow a user to subscribe to up to 5 areas (e.g. home, farm, parent's home), including on behalf of another person (proxy), without requiring an account. | S1, S4, S6 | S | Migrant family members, carers (P2, P8). | Subscription with phone number only works; proxy label shown in message ("for: Father's home"). |
 | FR-33 | The citizen interface shall show level-specific evacuation instructions, including "what to take" and "what not to do" (e.g. do not cross flowing water). | S1, S3 | M | Actionability. | Instructions exist for each level × language; reviewed by DRR proxy. |
 | FR-34 | The system shall determine a user's area from (a) chosen area, (b) device location with explicit consent, or (c) QR/area code (e.g. posted at guesthouses, schools). | S7, S1 | S | Tourists and privacy-preferring users (P5). | Each method yields correct area for test points; location is not stored server-side unless the user subscribes with it. |
-| FR-35 | The system shall support an SMS channel (simulated gateway in prototype) with compact templates in Nepali and English. | S2, S4 | M | Feature phones / no data (P1, P2). | SMS template ≤ 2 segments per language; simulator log shows delivery. |
+| FR-35 | The system shall support an SMS channel (simulated gateway in prototype) with compact templates in each configured language (pilot: Nepali and English). | S2, S4 | M | Feature phones / no data (P1, P2). | SMS template ≤ 2 segments per language; simulator log shows delivery. |
 | FR-36 | The system shall allow a user to request assistance (e.g. mobility help) that creates an incident visible to the responsible local operator and volunteers. | S6, S4, S24 | S | Vulnerable people need help evacuating. | Request appears on dashboard within ≤ 10 s **[T]** with category and location. |
 | FR-37 | The system shall allow citizens and volunteers to report local conditions (category, location, optional water depth, optional photo, description), working offline and syncing later. | S1, S24, S8 | M | Ground truth; detects events sensors miss. | Offline report queued in PWA and submitted on reconnect; operator sees it with `new` status. |
 
@@ -123,6 +125,7 @@
 | FR-65 | Admins shall manage message templates per hazard × level × language × channel, with mandatory-field linting and approval. | S21, S8 | M | Multilingual, consistent messages. | Template missing a required placeholder cannot be saved. |
 | FR-66 | Admins shall manage users, roles and geographic scopes. | S21 | M | RBAC. | Operator scoped to Ward 5 cannot approve warnings for Ward 6 (API + RLS test). |
 | FR-67 | Admins shall enable/disable hazard types and data sources and set region policies (auto-publish WATCH, Critical timeout, auto-publish unconfirmed Critical). | S21, S10 | M | Adaptive design. | Toggling policy changes behaviour in the corresponding test. |
+| FR-68 | The system shall load every country- or region-specific setting (administrative hierarchy, languages, official authorities, emergency numbers, time zone, calendar, legal texts, channels) from a Deployment Profile; nothing country-specific is hard-coded. | S10, S21 | M | Global by design; Nepal is the first pilot. | A second test profile changes all of these with no code change. |
 
 ---
 
@@ -164,7 +167,7 @@
 | NFR-U1 | Emergency screens shall present at most one primary action per screen, using plain language at about a primary-school reading level (validated with users). | M | Stress reduces cognitive capacity. | Usability test: ≥ 80 % of participants identify correct action within 30 s **[T]**. |
 | NFR-U2 | Citizen pages shall conform to WCAG 2.2 Level AA (contrast, text resize to 200 %, screen-reader labels, keyboard navigation). | M | Persons with disabilities (S6). | axe-core automated + manual NVDA/TalkBack check. |
 | NFR-U3 | Risk levels shall be conveyed redundantly by word, icon, colour and (in app) an optional distinctive sound/vibration pattern; colour shall never be the sole cue. | M | Colour-blindness, low literacy. | Review checklist. |
-| NFR-U4 | All citizen UI strings and templates shall be available in Nepali (Devanagari) and English; the architecture shall support adding languages (e.g. Maithili, Bhojpuri, Tharu, Tamang, Newar) via language packs without code change. | M | Language diversity **[F]**. | Add a dummy language pack → UI renders it. |
+| NFR-U4 | All citizen UI strings and templates shall be available in every language configured for a deployment, with English as fallback (pilot: Nepali in Devanagari + English); new languages (e.g. Maithili, Bhojpuri, Tharu, Tamang, Newar for the pilot, or any other) are added via language packs without code change. | M | Rural and multilingual users. | Add a dummy language pack → UI renders it. |
 | NFR-U5 | The citizen app shall offer a "read aloud" function (browser TTS) for the action card, and SMS/IVR text shall be written to be read aloud by a helper. | S | Low literacy, visual impairment. | TTS plays in en; ne where browser voice available (limitation documented). |
 | NFR-U6 | Operators shall be able to approve a warning in ≤ 3 clicks from the dashboard notification, with evidence visible on the same screen. | S | Speed under pressure without blind approval. | Task analysis. |
 
@@ -233,7 +236,7 @@ Derived from hazard analysis (`06` §Failure scenarios) — every SR traces to �
 
 ## 5. Privacy Requirements (PR)
 
-> Nepal's *Individual Privacy Act, 2075 (2018)* governs personal information **[F — team to review relevant sections]**; GDPR-style principles (minimisation, purpose limitation) are adopted as design good practice **[D]**.
+> Each deployment follows its country's data-protection law (pilot: Nepal's *Individual Privacy Act, 2075 (2018)* **[F — team to review relevant sections]**); GDPR-style principles (minimisation, purpose limitation) are adopted as design good practice **[D]**.
 
 | ID | Requirement | Pri | Verification |
 |---|---|---|---|

@@ -94,11 +94,11 @@
 
 | ID | Risk | Prob | Impact | Mitigation | Owner |
 |---|---|---|---|---|---|
-| PR1 | Limited access to real stakeholders (officials, at-risk residents) | H | H | Use proxies (DRR lecturers, NGO staff, Nepali students from flood-prone districts), literature, published post-event reports; label persona assumptions | RE lead |
+| PR1 | Limited access to real stakeholders (officials, at-risk residents) | H | H | Use proxies (DRR lecturers, NGO staff, students from the pilot's flood-prone districts), literature, published post-event reports; label persona assumptions | RE lead |
 | PR2 | No access to official DHM real-time API | M | M | Simulated data designed from public historical patterns; adapter interface ready | Data lead |
 | PR3 | Scope creep (multi-hazard, ML, native apps) | H | H | MoSCoW; change control board (weekly); Won't-have list | PM |
-| PR4 | Routing on OSM data incomplete in rural Nepal **[A]** | M | M | Pilot in an area with acceptable OSM coverage; show route confidence; manual path edits | Dev |
-| PR5 | Nepali language quality/devanagari rendering issues | M | M | Native speakers review all strings; Noto Sans Devanagari font; UCS-2 SMS length tests | UX |
+| PR4 | Routing on OSM data incomplete in rural areas (incl. the Nepal pilot) **[A]** | M | M | Pilot in an area with acceptable OSM coverage; show route confidence; manual path edits | Dev |
+| PR5 | Pilot-language (Nepali) quality and Devanagari rendering issues | M | M | Native speakers review all strings; Noto Sans Devanagari font; UCS-2 SMS length tests | UX |
 | PR6 | Free-tier limits (Supabase/hosting) | M | L | Small data volumes; scenario playback at demo time only | Dev |
 | PR7 | Ethical risk: prototype mistaken for real system | L | H | "PROTOTYPE – NOT AN OFFICIAL WARNING SYSTEM" banner; synthetic subscribers only; no real SMS | PM |
 | PR8 | Team member unavailability | M | M | Pair ownership of modules; documentation | PM |

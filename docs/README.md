@@ -1,6 +1,6 @@
-# AMHEWS-Nepal — Requirements Engineering Documentation
+# AMHEWS — Requirements Engineering Documentation
 
-**Adaptive Multi-Hazard Early Warning and Evacuation Support System for Nepal**
+**Adaptive Multi-Hazard Early Warning and Evacuation Support System** — global by design, first pilot deployment: Nepal
 Prototype stack: Supabase (PostgreSQL + PostGIS, Auth, Realtime, Storage) · Python FastAPI · Next.js/React PWA.
 
 > Decision support only. This is not an official warning system and doesn't guarantee prediction or safety.
@@ -19,13 +19,13 @@ Prototype stack: Supabase (PostgreSQL + PostGIS, Auth, Realtime, Storage) · Pyt
 | 15–19 | Functional, Non-functional, Safety, Security, Privacy requirements | [04-requirements.md](04-requirements.md) |
 | 20–21 | Use cases (13), User stories (24) | [05-use-cases-and-user-stories.md](05-use-cases-and-user-stories.md) |
 | 22, 23, 26 | Failure scenarios (20), Conflicts (11), Risk analysis | [06-failures-conflicts-risk.md](06-failures-conflicts-risk.md) |
-| §11–12 | Nepal-specific considerations, Adaptive design, Facts register | [07-nepal-context-and-adaptive-design.md](07-nepal-context-and-adaptive-design.md) |
+| §11–12 | Pilot context (Nepal), Adaptive / global design, Facts register | [07-pilot-context-nepal-and-adaptive-design.md](07-pilot-context-nepal-and-adaptive-design.md) |
 | 24–25 | MoSCoW prioritization, Traceability matrix | [08-prioritization-and-traceability.md](08-prioritization-and-traceability.md) |
 | §15, 27 | RE process, Ethics | [09-re-process-and-ethics.md](09-re-process-and-ethics.md) |
 | 28–33 | Prototype plan, Validation, Testing, Evaluation, Future work, Limitations, Conclusion | [10-prototype-validation-testing-conclusion.md](10-prototype-validation-testing-conclusion.md) |
 
 ## Requirement ID scheme
-- `FR-01..FR-67` functional · `NFR-PF/A/R/U/SC/M/I` non-functional · `SR-01..SR-12` safety · `NFR-S1..S9` security · `NFR-PR1..PR8` privacy
+- `FR-01..FR-68` functional · `NFR-PF/A/R/U/SC/M/I` non-functional · `SR-01..SR-12` safety · `NFR-S1..S9` security · `NFR-PR1..PR8` privacy
 - `UC-01..UC-13` use cases · `US-01..US-24` user stories · `F1..F20` failure scenarios · `C1..C11` conflicts · `ST-01..ST-14` scenario tests
 - Stakeholders `S1..S24`, goals `G0..G8`, personas `P1..P8`, facts `F1..F15` in the Facts Register (doc 07 §3)
 
