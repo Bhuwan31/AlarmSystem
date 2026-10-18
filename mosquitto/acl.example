@@ -1,0 +1,9 @@
+# Backend service account
+user amhews-backend
+topic readwrite devices/#
+
+# One block per device: a device may only publish its own data and read its own commands
+pattern write devices/%u/readings
+pattern write devices/%u/heartbeat
+pattern write devices/%u/ack
+pattern read devices/%u/command
