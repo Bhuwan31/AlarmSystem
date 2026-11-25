@@ -6,7 +6,8 @@ import { useMemo, useState } from "react";
 import AiAnalystPanel from "@/components/AiAnalystPanel";
 import { Button, Empty, Field, inputCls, LevelBadge, Notice, PageHeader, Panel, SignInPrompt } from "@/components/ui";
 import type { Warning } from "@/lib/api";
-import { useAuth } from "@/lib/auth";
+import { useAuth, SEND_ROLE } from "@/lib/auth";
+import { confirmTwice } from "@/lib/confirm";
 import { ago } from "@/lib/colors";
 import { useRivers, useWarnings } from "@/lib/hooks";
 
@@ -21,7 +22,7 @@ export default function WarningsPage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Warnings" subtitle="Proposals come from the risk engine or operators. WARNING needs 1 approver; CRITICAL needs 2 different approvers signed in with two-factor." />
+      <PageHeader title="Warnings" subtitle="Proposals come from the risk engine or operators. Operators can approve. Every approval asks you to confirm twice, then the warning goes to residents near the station." />
       <AiAnalystPanel onProposed={refresh} />
       <div className="flex gap-2" role="tablist">
         {(["current", "history"] as const).map((t) => (
@@ -42,20 +43,24 @@ export default function WarningsPage() {
 }
 
 function WarningCard({ w, onChange }: { w: W; onChange: () => void }) {
-  const { user, can, mfa, api } = useAuth();
+  const { user, can, api } = useAuth();
   const [lang, setLang] = useState<"en" | "ne">("en");
   const [reason, setReason] = useState("");
   const [mode, setMode] = useState<"reject" | "cancel" | null>(null);
   const [msg, setMsg] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
-  const needed = w.level === "CRITICAL" ? 2 : 1;
+  const needed = 1;
   const alreadyApproved = !!user && w.approvers.includes(user.id);
 
   async function act(path: string, body?: unknown) {
     setBusy(true); setMsg(null);
     try {
-      const r = await api<{ status: string }>(`/api/v1/warnings/${w.id}/${path}`, { method: "POST", body });
-      setMsg({ kind: "ok", text: `Done — status is now ${r.status}.` });
+      const r = await api<{ status: string; residents?: Record<string, number | string> | null }>(`/api/v1/warnings/${w.id}/${path}`, { method: "POST", body });
+      const res = r.residents;
+      const sent = !res ? "" : "error" in res ? ` Sending to residents failed: ${res.error}`
+        : ` ${path === "cancel" ? "All-clear" : "Warning"} sent to ${res.recipients ?? 0} resident${res.recipients === 1 ? "" : "s"} in the area`
+          + `${Object.entries(res).filter(([k]) => k !== "recipients").map(([k, v]) => `, ${k.replaceAll("_", " ")}: ${v}`).join("")}.`;
+      setMsg({ kind: "ok", text: `Done — status is now ${r.status}.${sent}` });
       setMode(null); setReason(""); onChange();
     } catch (e) {
       setMsg({ kind: "error", text: (e as Error).message });
@@ -92,12 +97,12 @@ function WarningCard({ w, onChange }: { w: W; onChange: () => void }) {
 
       {(w.status === "PROPOSED" || w.status === "ACTIVE") && (
         <div className="mt-3 space-y-2">
-          {!can("approver") ? <SignInPrompt role="approver" action="act on warnings" /> : (
+          {!can(SEND_ROLE) ? <SignInPrompt role={SEND_ROLE} action="act on warnings" /> : (
             <>
               <div className="flex flex-wrap gap-2">
                 {w.status === "PROPOSED" && (
                   <>
-                    <Button variant="primary" disabled={busy || alreadyApproved || (w.level === "CRITICAL" && !mfa)} onClick={() => act("approve")}>
+                    <Button variant="primary" disabled={busy || alreadyApproved} onClick={() => { if (confirmTwice(`Approve this ${w.level} warning for ${w.station_name}? It will be sent to every resident near the station.`, w.level)) act("approve"); }}>
                       {alreadyApproved ? "You approved" : "Approve"}
                     </Button>
                     <Button variant="secondary" disabled={busy} onClick={() => setMode(mode === "reject" ? null : "reject")}>Reject…</Button>
@@ -105,9 +110,6 @@ function WarningCard({ w, onChange }: { w: W; onChange: () => void }) {
                 )}
                 {w.status === "ACTIVE" && <Button variant="danger" disabled={busy} onClick={() => setMode(mode === "cancel" ? null : "cancel")}>Cancel warning…</Button>}
               </div>
-              {w.level === "CRITICAL" && !mfa && w.status === "PROPOSED" && (
-                <p className="text-xs text-amber-300">CRITICAL approvals need a two-factor session. Set up two-factor on the Admin page, then sign in again.</p>
-              )}
               {mode && (
                 <div className="flex flex-wrap items-end gap-2">
                   <Field label={mode === "reject" ? "Reason for rejecting" : "Reason for cancelling (an all-clear goes to everyone who got the warning)"}>

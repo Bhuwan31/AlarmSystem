@@ -13,7 +13,7 @@ def required_approvals(level: str, auto_publish_watch: bool) -> int:
     if level == "WARNING":
         return 1
     if level == "CRITICAL":
-        return 2
+        return 1          # one person, with a two-step confirmation in the app
     raise TransitionError(f"unknown level {level}")
 
 

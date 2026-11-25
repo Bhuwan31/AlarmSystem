@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Upload
 from fastapi.responses import Response
 from pydantic import BaseModel, Field, field_validator
 
-from app.auth import RANK, User, current_user, require
+from app.auth import SEND_ROLE, RANK, User, current_user, require
 from app.config import get_settings
 from app.db import audit, pool
 from app.geo_nepal import (CITIES, DISTRICTS, areas, canonical_city, canonical_district, canonical_province, nearest_district,
@@ -267,7 +267,7 @@ class VerifyBody(BaseModel):
 
 
 @router.post("/incidents/{iid}/verify")
-async def verify_incident(iid: str, body: VerifyBody, user: User = Depends(require("approver"))):
+async def verify_incident(iid: str, body: VerifyBody, user: User = Depends(require(SEND_ROLE))):
     async with pool().acquire() as conn, conn.transaction():
         i = await _load_incident(conn, iid, lock=True)
         if body.decision == "reject":
@@ -298,10 +298,8 @@ class SendBody(BaseModel):
 
 
 @router.post("/incidents/{iid}/approve-send")
-async def approve_send(iid: str, body: SendBody, user: User = Depends(require("approver"))):
+async def approve_send(iid: str, body: SendBody, user: User = Depends(require(SEND_ROLE))):
     """Human approval: confirm the incident, set level/radius/message, and notify subscribers inside the radius."""
-    if body.level == "CRITICAL" and not user.mfa:
-        raise HTTPException(403, "multi-factor authentication required to send a CRITICAL alert")
     channels = set(body.channels) & set(notify.CHANNELS)
     if "in_app" not in channels:
         channels.add("in_app")
@@ -328,10 +326,8 @@ class LevelBody(BaseModel):
 
 
 @router.post("/incidents/{iid}/level")
-async def change_level(iid: str, body: LevelBody, user: User = Depends(require("approver"))):
+async def change_level(iid: str, body: LevelBody, user: User = Depends(require(SEND_ROLE))):
     """Escalate or downgrade. For an ACTIVE incident an escalation must be sent with approve-send (the message changes)."""
-    if body.level == "CRITICAL" and not user.mfa:
-        raise HTTPException(403, "multi-factor authentication required for CRITICAL")
     async with pool().acquire() as conn, conn.transaction():
         i = await _load_incident(conn, iid, lock=True)
         if i["incident_status"] not in ("PROPOSED", "ACTIVE"):
@@ -355,7 +351,7 @@ class CloseBody(BaseModel):
 
 
 @router.post("/incidents/{iid}/close")
-async def close_incident(iid: str, body: CloseBody, user: User = Depends(require("approver"))):
+async def close_incident(iid: str, body: CloseBody, user: User = Depends(require(SEND_ROLE))):
     async with pool().acquire() as conn, conn.transaction():
         i = await _load_incident(conn, iid, lock=True)
         if i["incident_status"] in ("CLOSED", "REJECTED"):
@@ -374,7 +370,7 @@ async def close_incident(iid: str, body: CloseBody, user: User = Depends(require
 
 
 @router.get("/incidents/{iid}/notifications")
-async def incident_notifications(iid: str, user: User = Depends(require("approver"))):
+async def incident_notifications(iid: str, user: User = Depends(require(SEND_ROLE))):
     rows = await pool().fetch(
         """select n.id, n.recipient_id, u.name, n.notification_channel, n.notification_status, n.level, n.distance_km, n.error,
                   n.created_at, n.sent_at, n.read_at, n.acknowledged_at
@@ -432,7 +428,7 @@ async def read_all(user: User = Depends(current_user)):
 
 
 @router.get("/alerts/all")
-async def all_alerts(limit: int = Query(200, ge=1, le=1000), user: User = Depends(require("approver"))):
+async def all_alerts(limit: int = Query(200, ge=1, le=1000), user: User = Depends(require(SEND_ROLE))):
     rows = await pool().fetch(
         """select coalesce(n.incident_id::text, n.broadcast_id::text) ref, case when n.incident_id is null then 'broadcast' else 'incident' end kind,
                   n.level, n.title, n.notification_channel, n.notification_status, count(*) n, min(n.created_at) first_at,
@@ -452,6 +448,7 @@ class SubscriptionBody(BaseModel):
     channels: dict[str, bool] = Field(default_factory=lambda: {"in_app": True})
     phone: str | None = Field(None, pattern=r"^\+?[0-9 ]{7,20}$")
     email: str | None = Field(None, max_length=200)
+    ntfy_topic: str | None = Field(None, pattern=r"^[A-Za-z0-9_-]{12,64}$")
 
 
 def _sub(r) -> dict:
@@ -461,7 +458,8 @@ def _sub(r) -> dict:
             "consent_at": r["consent_at"].isoformat() if r["consent_at"] else None,
             "opted_out_at": r["opted_out_at"].isoformat() if r["opted_out_at"] else None,
             "latitude": r["lat"], "longitude": r["lon"], "home_label": r["home_label"], "district": r["district"],
-            "province": r["province"], "channels": r["channels"], "phone": r["phone"], "email": r["email"]}
+            "province": r["province"], "channels": r["channels"], "phone": r["phone"], "email": r["email"],
+            "ntfy_topic": r["ntfy_topic"]}
 
 
 @router.get("/subscription")
@@ -485,13 +483,15 @@ async def put_subscription(body: SubscriptionBody, user: User = Depends(current_
     channels["in_app"] = True
     async with pool().acquire() as conn, conn.transaction():
         await conn.execute(
-            """insert into alert_subscriptions (user_id, consent, consent_at, opted_out_at, home, home_label, district, province, channels, phone, email, updated_at)
-               values ($1::uuid, true, now(), null, ST_SetSRID(ST_MakePoint($3, $2), 4326), $4, $5, $6, $7, $8, $9, now())
+            """insert into alert_subscriptions (user_id, consent, consent_at, opted_out_at, home, home_label, district, province, channels, phone, email,
+                   ntfy_topic, updated_at)
+               values ($1::uuid, true, now(), null, ST_SetSRID(ST_MakePoint($3, $2), 4326), $4, $5, $6, $7, $8, $9, $10, now())
                on conflict (user_id) do update set consent = true, consent_at = coalesce(alert_subscriptions.consent_at, now()), opted_out_at = null,
                    home = excluded.home, home_label = excluded.home_label, district = excluded.district, province = excluded.province,
-                   channels = excluded.channels, phone = excluded.phone, email = excluded.email, updated_at = now()""",
+                   channels = excluded.channels, phone = excluded.phone, email = excluded.email, ntfy_topic = excluded.ntfy_topic,
+                   updated_at = now()""",
             user.id, body.latitude, body.longitude, body.home_label or place_label(body.latitude, body.longitude), district, province,
-            channels, body.phone, body.email)
+            channels, body.phone, body.email, body.ntfy_topic)
         await audit(conn, user.id, "subscription.update", "user", user.id, {"district": district, "channels": channels})
         r = await conn.fetchrow("select *, ST_Y(home) lat, ST_X(home) lon from alert_subscriptions where user_id::text = $1", user.id)
     return _sub(r)
@@ -500,10 +500,30 @@ async def put_subscription(body: SubscriptionBody, user: User = Depends(current_
 @router.delete("/subscription")
 async def opt_out(user: User = Depends(current_user)):
     async with pool().acquire() as conn, conn.transaction():
-        await conn.execute("""update alert_subscriptions set consent = false, opted_out_at = now(), home = null, phone = null, updated_at = now()
+        await conn.execute("""update alert_subscriptions set consent = false, opted_out_at = now(), home = null, phone = null, ntfy_topic = null, updated_at = now()
                               where user_id::text = $1""", user.id)
         await audit(conn, user.id, "subscription.opt_out", "user", user.id, {})
     return {"subscribed": False, "note": "Opted out. Your saved home location and phone number were deleted."}
+
+
+@router.post("/subscription/test")
+async def test_my_phone(user: User = Depends(current_user)):
+    """Send a test message to the caller's own phone channels (ntfy / SMS / e-mail / push) right now."""
+    async with pool().acquire() as conn:
+        r = await conn.fetchrow(notify._BASE.format(dist="") + " and s.user_id::text = $1", user.id)
+        if r is None:
+            raise HTTPException(409, "save your alert settings (with consent and a location) first")
+        rec = notify._rows([r])[0]
+        out = {}
+        for ch in notify.resolve_channels(rec, set(notify.CHANNELS)):
+            if ch != "in_app":
+                status, err = await notify.deliver(conn, ch, rec, "AMHEWS test alert",
+                                                   "This is a test from your early-warning system. If you can read this on your "
+                                                   "phone, alerts will reach you here.", "WARNING")
+                out[ch] = {"status": status, "error": err}
+    if not out:
+        raise HTTPException(409, "no phone channel is set up: tick Phone (ntfy) with your topic, SMS or e-mail, and save first")
+    return {"results": out, "external_sending_enabled": get_settings().notify_external_enabled}
 
 
 class PushBody(BaseModel):
@@ -576,7 +596,7 @@ def _target(b: BroadcastBody) -> tuple[str | None, float | None, float | None, f
 
 
 @router.post("/broadcasts/preview")
-async def preview_broadcast(body: BroadcastBody, user: User = Depends(require("approver"))):
+async def preview_broadcast(body: BroadcastBody, user: User = Depends(require(SEND_ROLE))):
     value, la, lo, r = _target(body)
     async with pool().acquire() as conn:
         rec = await notify.recipients_for_target(conn, body.target_type, value, la, lo, r)
@@ -584,9 +604,7 @@ async def preview_broadcast(body: BroadcastBody, user: User = Depends(require("a
 
 
 @router.post("/broadcasts", status_code=201)
-async def create_broadcast(body: BroadcastBody, user: User = Depends(require("approver"))):
-    if body.level == "CRITICAL" and not user.mfa:
-        raise HTTPException(403, "multi-factor authentication required for a CRITICAL broadcast")
+async def create_broadcast(body: BroadcastBody, user: User = Depends(require(SEND_ROLE))):
     value, la, lo, r = _target(body)
     now = datetime.now(timezone.utc)
     send_at = _parse_ts(body.send_at, "send_at") or now
@@ -632,7 +650,7 @@ def _bcast(b) -> dict:
 @router.get("/broadcasts")
 async def list_broadcasts(limit: int = Query(100, ge=1, le=500),
                           status: str | None = Query(None, pattern="^(PROPOSED|SCHEDULED|SENDING|SENT|CANCELLED|FAILED|REJECTED)$"),
-                          user: User = Depends(require("approver"))):
+                          user: User = Depends(require(SEND_ROLE))):
     rows = await pool().fetch(
         """select b.*, ST_Y(b.center) lat, ST_X(b.center) lon, ru.name reviewer_name, cu.name creator_name, xu.name canceller_name
            from area_broadcasts b left join users ru on ru.id::text = b.reviewed_by left join users cu on cu.id::text = b.created_by
@@ -642,7 +660,7 @@ async def list_broadcasts(limit: int = Query(100, ge=1, le=500),
 
 
 @router.get("/broadcasts/pending")
-async def pending_broadcasts(user: User = Depends(require("approver"))):
+async def pending_broadcasts(user: User = Depends(require(SEND_ROLE))):
     """AI-drafted messages waiting for a decision: polled by every approver screen for the banner and alert sound."""
     rows = await pool().fetch(
         """select id, level, title, area_label, hazard, coalesce(updated_at, created_at) at from area_broadcasts
@@ -682,7 +700,7 @@ async def _apply_edit(conn, bid, body: DraftEdit, statuses: tuple[str, ...]):
 
 
 @router.patch("/broadcasts/{bid}")
-async def edit_broadcast(bid: str, body: DraftEdit, user: User = Depends(require("approver"))):
+async def edit_broadcast(bid: str, body: DraftEdit, user: User = Depends(require(SEND_ROLE))):
     """Save changes to a draft (waiting or rejected) without sending it."""
     async with pool().acquire() as conn, conn.transaction():
         b = await _apply_edit(conn, _uuid(bid), body, ("PROPOSED", "REJECTED"))
@@ -691,7 +709,7 @@ async def edit_broadcast(bid: str, body: DraftEdit, user: User = Depends(require
 
 
 @router.post("/broadcasts/{bid}/approve")
-async def approve_broadcast(bid: str, body: DraftSend, user: User = Depends(require("approver"))):
+async def approve_broadcast(bid: str, body: DraftSend, user: User = Depends(require(SEND_ROLE))):
     """Approve a draft (waiting or previously rejected) with any edits, and send it now or at send_at."""
     now = datetime.now(timezone.utc)
     send_at = _parse_ts(body.send_at, "send_at") or now
@@ -702,8 +720,6 @@ async def approve_broadcast(bid: str, body: DraftSend, user: User = Depends(requ
         raise HTTPException(422, "valid_until must be after send_at")
     async with pool().acquire() as conn, conn.transaction():
         b = await _apply_edit(conn, _uuid(bid), body, ("PROPOSED", "REJECTED"))
-        if b["level"] == "CRITICAL" and not user.mfa:
-            raise HTTPException(403, "multi-factor authentication required for a CRITICAL message")
         exercise = await service._exercise(conn)
         await conn.execute(
             """update area_broadcasts set status = 'SCHEDULED', send_at = $2, valid_until = $3, exercise = $4, reviewed_by = $5,
@@ -718,7 +734,7 @@ async def approve_broadcast(bid: str, body: DraftSend, user: User = Depends(requ
 
 
 @router.post("/broadcasts/{bid}/reject")
-async def reject_broadcast(bid: str, body: DraftReject, user: User = Depends(require("approver"))):
+async def reject_broadcast(bid: str, body: DraftReject, user: User = Depends(require(SEND_ROLE))):
     """Reject a draft. It stays in the history (with who, when and why) and can still be edited and sent later."""
     async with pool().acquire() as conn, conn.transaction():
         r = await conn.fetchval(
@@ -731,7 +747,7 @@ async def reject_broadcast(bid: str, body: DraftReject, user: User = Depends(req
 
 
 @router.post("/broadcasts/{bid}/cancel")
-async def cancel_broadcast(bid: str, user: User = Depends(require("approver"))):
+async def cancel_broadcast(bid: str, user: User = Depends(require(SEND_ROLE))):
     async with pool().acquire() as conn, conn.transaction():
         r = await conn.fetchval("update area_broadcasts set status = 'CANCELLED', cancelled_by = $2 where id = $1 and status = 'SCHEDULED' returning id",
                                 _uuid(bid), user.id)

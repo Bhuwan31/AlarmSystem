@@ -4,9 +4,10 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from app.auth import User, require
+from app.auth import SEND_ROLE, User, require
 from app.db import audit, pool
 from app.devices import sirens
+from app.vision import service as delivery
 from app.warnings import state_machine as sm
 from app.warnings.templates import render
 
@@ -57,12 +58,10 @@ async def create_manual(body: ManualWarning, user: User = Depends(require("opera
 
 
 @router.post("/{wid}/approve")
-async def approve(wid: str, user: User = Depends(require("approver", mfa=False))):
+async def approve(wid: str, user: User = Depends(require(SEND_ROLE, mfa=False))):
+    bid = None
     async with pool().acquire() as conn, conn.transaction():
         w = await _load(conn, wid)
-        if w["level"] == "CRITICAL" and not user.mfa:
-            # CRITICAL approvals need an MFA session (NFR-S1); lower levels tolerate password sessions in the MVP
-            raise HTTPException(403, "multi-factor authentication required to approve CRITICAL")
         profile = await conn.fetchrow("select policies from deployment_profile where id = 1")
         approvers = set(await conn.fetchval("select coalesce(array_agg(approver), '{}') from warning_approvals where warning_id = $1", w["id"]))
         try:
@@ -81,11 +80,22 @@ async def approve(wid: str, user: User = Depends(require("approver", mfa=False))
             await audit(conn, user.id, "warning.activate", "warning", wid, {"level": w["level"], "supersedes": str(prev) if prev else None})
             if w["level"] == "CRITICAL":
                 await sirens.activate_for_warning(conn, w["id"], w["station_id"], issued_by=user.id)
-    return {"id": wid, "status": new_status, "approvals": len(approvers)}
+            bid = await delivery.queue_warning_broadcast(conn, w, user.id)
+    # Send to residents after the warning is committed: a delivery problem must never undo an approved warning.
+    return {"id": wid, "status": new_status, "approvals": len(approvers), "residents": await _send(bid)}
+
+
+async def _send(bid) -> dict | None:
+    if bid is None:
+        return None
+    try:
+        return await delivery.send_broadcast(bid)
+    except Exception as e:  # noqa: BLE001 - recorded on the area message as FAILED
+        return {"error": str(e)[:200]}
 
 
 @router.post("/{wid}/reject")
-async def reject(wid: str, body: Reason, user: User = Depends(require("approver"))):
+async def reject(wid: str, body: Reason, user: User = Depends(require(SEND_ROLE))):
     async with pool().acquire() as conn, conn.transaction():
         w = await _load(conn, wid)
         try:
@@ -98,7 +108,7 @@ async def reject(wid: str, body: Reason, user: User = Depends(require("approver"
 
 
 @router.post("/{wid}/cancel")
-async def cancel(wid: str, body: Reason, user: User = Depends(require("approver"))):
+async def cancel(wid: str, body: Reason, user: User = Depends(require(SEND_ROLE))):
     async with pool().acquire() as conn, conn.transaction():
         w = await _load(conn, wid)
         try:
@@ -108,4 +118,5 @@ async def cancel(wid: str, body: Reason, user: User = Depends(require("approver"
         await conn.execute("update warnings set status = $2, cancel_reason = $3, updated_at = now() where id = $1", w["id"], new_status, body.reason)
         await audit(conn, user.id, "warning.cancel", "warning", wid, {"reason": body.reason, "all_clear": True})
         await sirens.stop_for_warning(conn, w["id"], issued_by=user.id)
-    return {"id": wid, "status": new_status}
+        bid = await delivery.queue_warning_broadcast(conn, w, user.id, all_clear=True, reason=body.reason)
+    return {"id": wid, "status": new_status, "residents": await _send(bid)}

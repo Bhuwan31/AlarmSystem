@@ -7,7 +7,7 @@ import useSWR from "swr";
 
 import { isMuted, playAlarm, setMuted, unlockAudioOnFirstGesture } from "@/lib/alarm";
 import { fetcher, type Profile, type Warning } from "@/lib/api";
-import { useAuth, type Role } from "@/lib/auth";
+import { useAuth, type Role, SEND_ROLE } from "@/lib/auth";
 
 const NAV: { href: string; label: string; icon: string; role?: Role }[] = [
   { href: "/", label: "Dashboard", icon: "◧" },
@@ -16,7 +16,7 @@ const NAV: { href: string; label: string; icon: string; role?: Role }[] = [
   { href: "/visual", label: "Report a photo", icon: "📷" },
   { href: "/alerts", label: "My alerts", icon: "🔔" },
   { href: "/incidents", label: "Visual incidents", icon: "◆", role: "operator" },
-  { href: "/broadcast", label: "Area messages", icon: "📢", role: "approver" },
+  { href: "/broadcast", label: "Area messages", icon: "📢", role: SEND_ROLE },
   { href: "/assistant", label: "AI assistant", icon: "✦" },
   { href: "/rivers", label: "Rivers", icon: "≈" },
   { href: "/rain", label: "Rainfall", icon: "☂" },
@@ -155,7 +155,7 @@ interface PendingMessages { count: number; items: { id: string; level: string; t
 /** AI-drafted area messages waiting for an approver (polled every 20 s). */
 function usePendingMessages(): PendingMessages {
   const { api, can } = useAuth();
-  const { data } = useSWR<PendingMessages>(can("approver") ? "pending-messages" : null,
+  const { data } = useSWR<PendingMessages>(can(SEND_ROLE) ? "pending-messages" : null,
     () => api<PendingMessages>("/api/v1/visual-disaster/broadcasts/pending"), { refreshInterval: 20_000 });
   return data ?? { count: 0, items: [] };
 }
@@ -197,7 +197,7 @@ function ReviewBanner() {
   // the banner only renders after the client has fetched drafts, so reading localStorage here cannot cause a hydration mismatch
   const [muted, setMutedState] = useState(() => typeof window !== "undefined" && isMuted());
   useDraftAlarm(drafts);
-  if (!can("approver")) return null;
+  if (!can(SEND_ROLE)) return null;
   const d = drafts.items[0];
   const first = proposed[0];
   const tone = d?.level === "CRITICAL" ? "border-red-500/40 bg-red-500/15 text-red-100" : "border-amber-400/30 bg-amber-400/10 text-amber-100";

@@ -5,6 +5,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { API_URL } from "./api";
 
 export type Role = "viewer" | "operator" | "approver" | "admin";
+/** Lowest role that may approve warnings and send messages (must match SEND_ROLE in backend/app/auth.py). */
+export const SEND_ROLE: Role = "operator";
 const RANK: Record<Role, number> = { viewer: 0, operator: 1, approver: 2, admin: 3 };
 
 export interface SessionUser {

@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 
+import { useAuth } from "@/lib/auth";
+
 import type { RiskLevel, SourceStatus } from "@/lib/api";
 import { LEVEL_COLOR } from "@/lib/colors";
 
@@ -87,9 +89,19 @@ export function Notice({ kind = "info", children }: { kind?: "info" | "error" | 
 }
 
 export function SignInPrompt({ role, action }: { role: string; action: string }) {
+  const { user } = useAuth();
+  if (user) {
+    return (
+      <Notice kind="info">
+        Your account is a <b>{user.role}</b> account. To {action} you need the <b>{role}</b> role or higher: ask an
+        administrator to change your role on the Admin page.
+      </Notice>
+    );
+  }
   return (
     <Notice kind="info">
-      <Link href="/login" className="font-semibold underline">Sign in</Link> as {role} or higher to {action}.
+      <Link href="/login" className="font-semibold underline">Sign in</Link> as {role} or higher to {action}. New sign-ups are
+      resident accounts (photo reports and alerts); staff roles are given by an administrator.
     </Notice>
   );
 }

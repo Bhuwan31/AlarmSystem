@@ -275,7 +275,7 @@ async def send_broadcast(bid) -> dict:
             body = area_body(b["message"], b["level"], b["exercise"], b["valid_until"], tz)
             lvl = b["level"] if b["level"] != "INFO" else "INFO"
             counts = await notify.distribute(conn, recipients=recips, level=lvl, title=b["title"], body_for=lambda r: body,
-                                             allowed_channels=set(notify.CHANNELS), broadcast_id=b["id"])
+                                             allowed_channels=set(notify.CHANNELS), broadcast_id=b["id"], all_clear=b["all_clear"])
             await conn.execute("update area_broadcasts set status = 'SENT', sent_at = now(), recipients = $2 where id = $1", b["id"], len(recips))
             await audit(conn, b["created_by"], "broadcast.send", "area_broadcast", str(b["id"]), {"result": counts})
         return counts
@@ -291,3 +291,44 @@ async def send_due_broadcasts() -> None:
             await send_broadcast(r["id"])
         except Exception:  # noqa: BLE001 - recorded on the row
             pass
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# approved warnings -> residents
+# ---------------------------------------------------------------------------------------------------------------------
+WARNING_RADIUS_KM = {"WATCH": 5.0, "WARNING": 10.0, "CRITICAL": 15.0}
+
+
+async def queue_warning_broadcast(conn, w, actor: str, all_clear: bool = False, reason: str | None = None):
+    """Inside the approve/cancel transaction: record the area message for an activated warning (or its all-clear).
+    The caller sends it with send_broadcast() after the transaction commits. Returns the message id, or None when
+    there is nothing to send (an all-clear for a warning that never reached anyone)."""
+    from app.warnings.templates import TEMPLATES
+    st = await conn.fetchrow("select name, ST_Y(geom) lat, ST_X(geom) lon from stations where id = $1", w["station_id"])
+    if st is None:
+        return None
+    place = st["name"]
+    if all_clear:
+        prev = await conn.fetchrow("""select radius_km from area_broadcasts where warning_id = $1 and not all_clear and status = 'SENT'
+                                      order by sent_at desc limit 1""", w["id"])
+        if prev is None:
+            return None
+        level, radius, title = "INFO", prev["radius_km"], f"ALL CLEAR — {place}"[:120]
+        message = (f"The {w['level']} flood warning for {place} has been cancelled. The danger has passed; stay careful near "
+                   f"rivers and follow local officials." + (f" Reason: {reason}" if reason else "") +
+                   f"\nबाढी चेतावनी रद्द गरिएको छ – {place}: खतरा टरेको छ। नदी नजिक सावधान रहनुहोस्।")
+        valid_until = datetime.now(timezone.utc) + timedelta(hours=6)
+    else:
+        level, radius = w["level"], WARNING_RADIUS_KM.get(w["level"], 10.0)
+        title = {"WATCH": "FLOOD WATCH", "WARNING": "FLOOD WARNING", "CRITICAL": "EVACUATE NOW"}.get(level, level) + f" — {place}"
+        message = TEMPLATES[level]["en"].format(place=place) + "\n" + TEMPLATES[level]["ne"].format(place=place)
+        valid_until = w["valid_until"]
+    bid = await conn.fetchval(
+        """insert into area_broadcasts (target_type, center, radius_km, level, title, message, send_at, valid_until, status, exercise,
+               created_by, source, area_label, warning_id, all_clear, reviewed_by, reviewed_at)
+           values ('point', ST_SetSRID(ST_MakePoint($2, $1), 4326), $3, $4, $5, $6, now(), $7, 'SCHEDULED', $8, $9, 'warning', $10, $11,
+               $12, $9, now()) returning id""",
+        st["lat"], st["lon"], radius, level, title[:120], message[:2000], valid_until, w["exercise"], actor, place, w["id"], all_clear)
+    await audit(conn, actor, "warning.notify_residents", "area_broadcast", str(bid),
+                {"warning": str(w["id"]), "level": level, "radius_km": radius, "all_clear": all_clear})
+    return bid

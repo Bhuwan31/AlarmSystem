@@ -174,6 +174,21 @@ docker compose up -d --build backend
 Training runs in its own image with PyTorch; the backend runs the exported models with numpy, scikit-learn and XGBoost.
 Results are in `backend/app/ml/artifacts/metrics.json`.
 
+## Alerts to residents' phones
+
+Approved warnings (and their all-clears), approved photo incidents and area messages go to every subscribed resident in
+the area: in the app's inbox, and on their phone through the free **ntfy** app (Android / iOS). No hosting or SMS
+account is needed, so it also works when the system runs on one computer.
+
+1. On the phone, install **ntfy** and subscribe to a private topic name.
+2. In the app, **My alerts**: set your location, tick **Phone notification (free ntfy app)**, enter the same topic,
+   save, then **Send a test to my phone**.
+3. `.env` needs `NOTIFY_EXTERNAL_ENABLED=true` (with `false`, sending is only simulated and recorded).
+
+CRITICAL alerts use ntfy's highest priority. Messages pass through the public server https://ntfy.sh unless
+`NTFY_SERVER` points to your own. SMS (`TWILIO_*`), e-mail (`SMTP_*`) and web push (`VAPID_*`) work the same way once
+their providers are configured.
+
 ## AI visual disaster detection
 
 A resident photographs or uploads a scene; the system records when (camera clock or EXIF, with timezone) and where
