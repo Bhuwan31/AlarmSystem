@@ -6,6 +6,7 @@ Channels
   email   SMTP, when SMTP_HOST is set
   sms     Twilio REST API, when TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_FROM are set
   push    Web Push, when VAPID keys are set and the pywebpush package is installed
+  ntfy    phone notification through the free ntfy app (NTFY_SERVER, default https://ntfy.sh), to the resident's own topic
 External channels are SIMULATED (recorded as 'simulated', nothing leaves the server) until NOTIFY_EXTERNAL_ENABLED=true,
 so the whole flow can be tested with simulated users first.
 """
@@ -24,7 +25,7 @@ from app.config import get_settings
 from app.geo_nepal import canonical_city, canonical_district, canonical_province, CITIES
 
 log = logging.getLogger(__name__)
-CHANNELS = ("in_app", "push", "sms", "email")
+CHANNELS = ("in_app", "ntfy", "push", "sms", "email")
 LEVEL_RANK = {"INFO": 0, "WATCH": 1, "WARNING": 2, "CRITICAL": 3}
 
 HAZARD_WORDS = {"FLOOD": "flooding", "FLASH_FLOOD": "flash flooding", "RIVER_FLOOD": "river flooding",
@@ -46,6 +47,7 @@ class Recipient:
     phone: str | None
     channels: dict
     distance_km: float | None
+    ntfy_topic: str | None = None
 
 
 def incident_title(level: str, disaster_type: str) -> str:
@@ -76,14 +78,14 @@ def incident_body(level: str, risk: str, disaster_type: str, location: str, repo
 # ---------------------------------------------------------------------------------------------------------------------
 # recipients
 # ---------------------------------------------------------------------------------------------------------------------
-_BASE = """select s.user_id::text uid, coalesce(s.email, u.email) email, s.phone, s.channels {dist}
+_BASE = """select s.user_id::text uid, coalesce(s.email, u.email) email, s.phone, s.channels, s.ntfy_topic {dist}
            from alert_subscriptions s join users u on u.id = s.user_id
            where s.consent and s.opted_out_at is null and u.active"""
 
 
 def _rows(rows) -> list[Recipient]:
     return [Recipient(r["uid"], r["email"], r["phone"], r["channels"] or {"in_app": True},
-                      round(r["km"], 2) if "km" in r.keys() and r["km"] is not None else None) for r in rows]
+                      round(r["km"], 2) if "km" in r.keys() and r["km"] is not None else None, r["ntfy_topic"]) for r in rows]
 
 
 async def recipients_near(conn, lat: float, lon: float, radius_km: float) -> list[Recipient]:
@@ -95,7 +97,7 @@ async def recipients_near(conn, lat: float, lon: float, radius_km: float) -> lis
 async def recipients_notified(conn, incident_id) -> list[Recipient]:
     """People who already received an alert for this incident (for updates and the all-clear)."""
     q = _BASE.format(dist=", min(n.distance_km) km").replace("from alert_subscriptions s", "from alert_subscriptions s join emergency_notifications n on n.recipient_id = s.user_id")
-    q += " and n.incident_id = $1 and n.notification_status in ('delivered', 'sent', 'simulated') group by s.user_id, u.email, s.email, s.phone, s.channels"
+    q += " and n.incident_id = $1 and n.notification_status in ('delivered', 'sent', 'simulated') group by s.user_id, u.email, s.email, s.phone, s.channels, s.ntfy_topic"
     return _rows(await conn.fetch(q, incident_id))
 
 
@@ -126,6 +128,8 @@ def resolve_channels(r: Recipient, allowed: set[str]) -> list[str]:
         ch.remove("sms")
     if "email" in ch and not r.email:
         ch.remove("email")
+    if "ntfy" in ch and (not r.ntfy_topic or r.ntfy_topic == get_settings().mass_alert_ntfy_topic):
+        ch.remove("ntfy")                                          # the mass topic already gets every message once
     return ch
 
 
@@ -140,6 +144,8 @@ def configured(channel: str) -> bool:
         return bool(s.smtp_host and s.smtp_from)
     if channel == "sms":
         return bool(s.twilio_account_sid and s.twilio_auth_token and s.twilio_from)
+    if channel == "ntfy":
+        return bool(s.ntfy_server)
     if channel == "push":
         if not (s.vapid_private_key and s.vapid_subject):
             return False
@@ -173,6 +179,23 @@ async def _send_sms(to: str, title: str, body: str) -> None:
         r.raise_for_status()
 
 
+NTFY_PRIORITY = {"CRITICAL": 5, "WARNING": 5, "WATCH": 4, "INFO": 4}       # 4 = vibrate + pop-up; 5 = long vibration, over other apps
+NTFY_TAGS = {"CRITICAL": ["rotating_light"], "WARNING": ["warning"], "WATCH": ["droplet"], "INFO": ["information_source"]}
+
+
+async def send_ntfy(topic: str, title: str, body: str, level: str = "INFO") -> None:
+    """Publish to an ntfy topic (JSON form, so titles and Nepali text keep their characters)."""
+    s = get_settings()
+    headers = {"Authorization": f"Bearer {s.ntfy_token}"} if s.ntfy_token else {}
+    payload = {"topic": topic, "title": title[:250], "message": body[:3500], "priority": NTFY_PRIORITY.get(level, 3),
+               "tags": NTFY_TAGS.get(level, [])}
+    if s.public_app_url:
+        payload["click"] = s.public_app_url
+    async with httpx.AsyncClient(timeout=20) as client:
+        r = await client.post(s.ntfy_server.rstrip("/") + "/", headers=headers, json=payload)
+        r.raise_for_status()
+
+
 async def _send_push(conn, user_id: str, title: str, body: str) -> None:
     from pywebpush import webpush  # type: ignore[import-not-found]
     s = get_settings()
@@ -185,7 +208,7 @@ async def _send_push(conn, user_id: str, title: str, body: str) -> None:
                                 vapid_claims={"sub": s.vapid_subject})
 
 
-async def deliver(conn, channel: str, r: Recipient, title: str, body: str) -> tuple[str, str | None]:
+async def deliver(conn, channel: str, r: Recipient, title: str, body: str, level: str = "INFO") -> tuple[str, str | None]:
     """Returns (status, error)."""
     if channel == "in_app":
         return "delivered", None
@@ -201,6 +224,8 @@ async def deliver(conn, channel: str, r: Recipient, title: str, body: str) -> tu
             await _send_sms(r.phone, title, body)
         elif channel == "push":
             await _send_push(conn, r.user_id, title, body)
+        elif channel == "ntfy":
+            await send_ntfy(r.ntfy_topic, title, body, level)
         return "sent", None
     except Exception as e:  # noqa: BLE001 - a failed channel must not stop the others
         log.warning("%s delivery to %s failed: %s", channel, r.user_id, e)
@@ -250,10 +275,44 @@ async def distribute(conn, *, recipients: list[Recipient], level: str, title: st
                 continue
             status = "suppressed"
             if not why:
-                status, err = await deliver(conn, ch, r, title, body)
+                status, err = await deliver(conn, ch, r, title, body, level)
                 await conn.execute("""update emergency_notifications set notification_status = $2, error = $3,
                                       sent_at = case when $2 in ('delivered', 'sent', 'simulated') then now() end where id = $1""",
                                    nid, status, err)
             counts[status] = counts.get(status, 0) + 1
     counts["recipients"] = len(recipients)
+    ref = f"incident:{incident_id}" if incident_id else f"broadcast:{broadcast_id}" if broadcast_id else None
+    if ref:
+        generic = Recipient("", None, None, {}, None)               # text without a personal distance
+        mass = await mass_send(conn, ref, level, title, body_for(generic), all_clear)
+        if mass:
+            counts["all_phones"] = mass
     return counts
+
+
+async def mass_send(conn, ref: str, level: str, title: str, body: str, all_clear: bool = False) -> str | None:
+    """"Send to all phones": publish each sent message once to the mass channel. Today: one ntfy topic
+    (MASS_ALERT_NTFY_TOPIC). Later this is the single place to switch to cell broadcast for every phone in the area.
+    Returns the status, or None when no mass channel is configured or this message was already published."""
+    s = get_settings()
+    topic = s.mass_alert_ntfy_topic.strip()
+    if not topic:
+        return None
+    body = body.replace("{distance}", "near the affected area")
+    mid = await conn.fetchval(
+        """insert into mass_alerts (ref, level, all_clear, channel, status, title, body) values ($1, $2, $3, 'ntfy', 'simulated', $4, $5)
+           on conflict (ref, level, all_clear) do nothing returning id""", ref, level, all_clear, title, body)
+    if mid is None:
+        return None                                                # already published: a re-send never repeats it
+    status, err = "simulated", None
+    if not s.notify_external_enabled:
+        log.info("SIMULATED mass alert %s: %s", ref, title)
+    else:
+        try:
+            await send_ntfy(topic, title, body, level)
+            status = "sent"
+        except Exception as e:  # noqa: BLE001 - recorded; the personal deliveries already happened
+            status, err = "failed", str(e)[:300]
+            log.warning("mass alert %s failed: %s", ref, e)
+    await conn.execute("update mass_alerts set status = $2, error = $3 where id = $1", mid, status, err)
+    return status

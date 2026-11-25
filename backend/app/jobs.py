@@ -124,6 +124,21 @@ def _ai_interval() -> int:
     return agent.interval_s()
 
 
+async def job_warning_messages() -> None:
+    """The AI writes the residents' message for new warning proposals (up to 3 per run, CRITICAL first)."""
+    from app.ai import writer
+    from app.db import pool
+    try:
+        rows = await pool().fetch(
+            """select * from warnings where status = 'PROPOSED' and resident_message is null
+               order by case level when 'CRITICAL' then 0 when 'WARNING' then 1 else 2 end, created_at desc limit 3""")
+        for w in rows:
+            async with pool().acquire() as conn:
+                await writer.draft_for_warning(conn, w)
+    except Exception:  # noqa: BLE001
+        log.exception("writing warning messages failed")
+
+
 async def job_ai_analysis() -> None:
     from app.ai import agent
     await agent.run_analysis("auto")
@@ -146,6 +161,7 @@ def build_scheduler() -> AsyncIOScheduler:
     sched.add_job(job_assess, "interval", seconds=120, id="assess", next_run_time=_soon(60))
     sched.add_job(job_device_health, "interval", seconds=60, id="device_health")
     sched.add_job(job_broadcasts, "interval", seconds=60, id="broadcasts")
+    sched.add_job(job_warning_messages, "interval", seconds=180, id="warning_messages", next_run_time=_soon(90))
     if s.ai_enabled:
         sched.add_job(job_ai_analysis, "interval", seconds=_ai_interval(), id="ai_analysis", next_run_time=_soon(120))
     return sched

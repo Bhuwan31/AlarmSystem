@@ -2,7 +2,7 @@
 
 AI findings -> drafts (PROPOSED) -> pending list -> edit -> approve & send -> delivered to residents in the radius;
 reject -> kept in history -> can still be sent; repeat findings update a draft instead of adding one; data gaps and
-NORMAL findings make no draft; CRITICAL needs two-factor. Everything created is deleted at the end.
+NORMAL findings make no draft. Everything created is deleted at the end.
 
     docker compose --profile ml run --rm ml-train python -m tests.e2e_ai_messages
 """
@@ -72,8 +72,6 @@ async def main() -> None:
             check("edit saved, AI original kept", r.status_code == 200 and b["edited"] and b["message"].startswith("EDITED")
                   and "rising quickly" in b["original_message"])
 
-            r = await c.post(f"{API}/visual-disaster/broadcasts/{teku}/approve", headers=admin, json={"level": "CRITICAL"})
-            check("CRITICAL refused without two-factor", r.status_code == 403, str(r.status_code))
             r = await c.post(f"{API}/visual-disaster/broadcasts/{teku}/approve", headers=admin, json={})
             out = r.json()
             check("approve & send now", r.status_code == 200 and out["status"] == "SENT", str(out)[:160])

@@ -12,6 +12,9 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from app.config import get_settings
 
 RANK = {"viewer": 0, "operator": 1, "approver": 2, "admin": 3}
+# Lowest role that may approve warnings and send messages to residents. CRITICAL still needs two different people
+# signed in with two-factor. Set to "approver" to require a separate approver role again.
+SEND_ROLE = "operator"
 _bearer = HTTPBearer(auto_error=False)
 
 

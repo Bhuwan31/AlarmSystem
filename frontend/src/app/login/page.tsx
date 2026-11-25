@@ -24,9 +24,18 @@ export default function LoginPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true); setError(null);
+    setError(null);
+    // Checked here with clear messages: the browser's own popups are easy to miss (and absent in some browsers)
+    const problem = !email.trim() ? "Enter your email address."
+      : !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim()) ? "Enter a valid email address, e.g. name@example.com."
+      : mode === "register" && name.trim().length < 2 ? "Enter your name (at least 2 characters)."
+      : !password ? "Enter a password."
+      : mode === "register" && password.length < 10 ? `The password must be at least 10 characters (yours has ${password.length}).`
+      : null;
+    if (problem) { setError(problem); return; }
+    setBusy(true);
     if (mode === "register") {
-      const reg = await register(email, name, password);
+      const reg = await register(email.trim(), name.trim(), password);
       setBusy(false);
       if (reg.ok) { router.push("/alerts"); return; }
       setError(reg.message);
@@ -41,7 +50,7 @@ export default function LoginPage() {
 
   return (
     <div className="grid min-h-screen place-items-center bg-[#07141a] p-4 text-slate-100">
-      <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-xl border border-white/10 bg-white/[0.03] p-6">
+      <form onSubmit={submit} noValidate className="w-full max-w-sm space-y-4 rounded-xl border border-white/10 bg-white/[0.03] p-6">
         <div>
           <div className="text-xs font-semibold tracking-[0.2em] text-amber-400">AMHEWS</div>
           <h1 className="mt-1 text-xl font-semibold">{mode === "login" ? "Sign in" : "Create an account"}</h1>
@@ -57,7 +66,7 @@ export default function LoginPage() {
         <Field label="Email">
           <input className={inputCls} type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
         </Field>
-        <Field label="Password">
+        <Field label="Password" hint={mode === "register" ? "At least 10 characters." : undefined}>
           <input className={inputCls} type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} required
                  minLength={mode === "register" ? 10 : undefined} value={password} onChange={(e) => setPassword(e.target.value)} />
         </Field>

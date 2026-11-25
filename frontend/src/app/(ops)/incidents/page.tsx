@@ -6,7 +6,8 @@ import useSWR from "swr";
 
 import { AlertBadge, RiskBadge, StatusPill } from "@/components/VisualBadges";
 import { Button, Empty, Field, inputCls, Notice, PageHeader, Panel, SignInPrompt, Stat } from "@/components/ui";
-import { useAuth } from "@/lib/auth";
+import { useAuth, SEND_ROLE } from "@/lib/auth";
+import { confirmTwice } from "@/lib/confirm";
 import {
   ACTION_TEXT, ALERT_COLOR, CORRELATION_TEXT, fmtTime, LOCATION_SOURCE_TEXT, RADII, TIME_SOURCE_TEXT, type AlertLevel, type Incident,
   type Observation,
@@ -59,7 +60,7 @@ function Dashboard() {
   return (
     <div className="space-y-5">
       <PageHeader title="Visual incidents" subtitle="AI photo detections grouped into incidents. Nothing is sent until an approver reviews the suggested message and presses Send." />
-      {proposed.length > 0 && can("approver") && (
+      {proposed.length > 0 && can(SEND_ROLE) && (
         <Notice kind="warn">
           <b>{proposed.length} new detection{proposed.length > 1 ? "s" : ""} waiting for review.</b>{" "}
           {proposed.slice(0, 3).map((i) => (
@@ -131,9 +132,9 @@ function Legend() {
 }
 
 function Detail({ id, onChanged }: { id: string; onChanged: () => void }) {
-  const { api, can, mfa } = useAuth();
+  const { api, can } = useAuth();
   const { data: inc, mutate } = useSWR<Incident>(["incident", id], () => api<Incident>(`/api/v1/visual-disaster/incidents/${id}`), { refreshInterval: 10_000 });
-  const { data: deliveries, mutate: mutateDeliveries } = useSWR<Delivery[]>(can("approver") ? ["deliveries", id] : null,
+  const { data: deliveries, mutate: mutateDeliveries } = useSWR<Delivery[]>(can(SEND_ROLE) ? ["deliveries", id] : null,
     () => api<Delivery[]>(`/api/v1/visual-disaster/incidents/${id}/notifications`));
   const [level, setLevel] = useState<AlertLevel>("WARNING");
   const [radius, setRadius] = useState<number>(3);
@@ -188,7 +189,7 @@ function Detail({ id, onChanged }: { id: string; onChanged: () => void }) {
         <div className="space-y-4">{inc.observations?.map((o) => <ObservationCard key={o.image_id} o={o} />)}</div>
       </Panel>
 
-      {open && can("approver") && (
+      {open && can(SEND_ROLE) && (
         <Panel title={inc.incident_status === "PROPOSED" ? "Suggested message — review and send" : "Send an update"}>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Alert level">
@@ -217,10 +218,9 @@ function Detail({ id, onChanged }: { id: string; onChanged: () => void }) {
               </label>
             ))}
           </fieldset>
-          {level === "CRITICAL" && !mfa && <Notice kind="warn">Sending CRITICAL needs a two-factor session (sign in with your authenticator code).</Notice>}
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button variant="danger" disabled={busy || (level === "CRITICAL" && !mfa)} onClick={() => {
-              if (!confirm(`Send ${level} to ${inc.users_by_radius?.[String(radius)] ?? "?"} subscribers within ${radius} km?`)) return;
+            <Button variant="danger" disabled={busy} onClick={() => {
+              if (!confirmTwice(`Send ${level} to ${inc.users_by_radius?.[String(radius)] ?? "?"} subscribers within ${radius} km?`, level)) return;
               act("approve-send", { level, radius_km: radius, title, body, channels: Object.entries(channels).filter(([, v]) => v).map(([k]) => k) }, "Approved and sent");
             }}>{inc.incident_status === "PROPOSED" ? "Approve & send" : "Send update"}</Button>
             {inc.incident_status === "PROPOSED" && inc.verification_status !== "confirmed" &&
@@ -240,10 +240,10 @@ function Detail({ id, onChanged }: { id: string; onChanged: () => void }) {
           {msg && <div className="mt-3"><Notice kind={msg.kind}>{msg.text}</Notice></div>}
         </Panel>
       )}
-      {open && !can("approver") && <Notice kind="info">An approver must review and send this incident&apos;s message.</Notice>}
+      {open && !can(SEND_ROLE) && <Notice kind="info">An operator must review and send this incident&apos;s message.</Notice>}
       {!open && inc.close_note && <Panel title="Closed"><p className="text-sm">{inc.close_note}</p></Panel>}
 
-      {can("approver") && (
+      {can(SEND_ROLE) && (
         <Panel title="Notification delivery" note={deliveries ? `${deliveries.length} records` : undefined}>
           {!deliveries?.length ? <Empty>Nothing sent for this incident.</Empty> : (
             <div className="max-h-72 overflow-auto">

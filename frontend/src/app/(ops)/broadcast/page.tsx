@@ -6,7 +6,8 @@ import useSWR, { useSWRConfig } from "swr";
 
 import { AlertBadge, StatusPill } from "@/components/VisualBadges";
 import { Button, Empty, Field, inputCls, Notice, PageHeader, Panel, SignInPrompt } from "@/components/ui";
-import { useAuth } from "@/lib/auth";
+import { useAuth, SEND_ROLE } from "@/lib/auth";
+import { confirmTwice } from "@/lib/confirm";
 import { ALERT_COLOR, type Areas, fmtTime, isoLocal } from "@/lib/visual";
 
 const VisualMap = dynamic(() => import("@/components/VisualMap"), { ssr: false });
@@ -18,7 +19,7 @@ interface Broadcast {
   id: string; target_type: Target; target_value: string | null; radius_km: number | null; level: Level; title: string; message: string;
   status: Status; exercise: boolean; recipients: number | null; send_at: string; valid_until: string | null; sent_at: string | null;
   created_at: string; updated_at: string | null; error: string | null; created_by: string; lat: number | null; lon: number | null;
-  source: "operator" | "ai_analyst"; area_label: string | null; hazard: string | null; edited: boolean;
+  source: "operator" | "ai_analyst" | "warning"; area_label: string | null; hazard: string | null; edited: boolean;
   ai_reason: { summary?: string; evidence?: string[]; confidence?: string; recommended_action?: string } | null;
   original_level: Level | null; original_title: string | null; original_message: string | null; original_radius_km: number | null;
   reviewed_by: string | null; reviewed_at: string | null; review_note: string | null; cancelled_by: string | null;
@@ -54,7 +55,7 @@ function targetText(b: Broadcast): string {
 export default function BroadcastPage() {
   const { can, ready } = useAuth();
   if (!ready) return null;
-  if (!can("approver")) return (<><PageHeader title="Area messages" /><SignInPrompt role="approver" action="send messages to an area" /></>);
+  if (!can(SEND_ROLE)) return (<><PageHeader title="Area messages" /><SignInPrompt role={SEND_ROLE} action="send messages to an area" /></>);
   return <AreaMessages />;
 }
 
@@ -86,7 +87,7 @@ function AreaMessages() {
 
 /** An AI draft (waiting or previously rejected): every field editable, then send now / schedule / save / reject. */
 function DraftCard({ b, onDone, onShow }: { b: Broadcast; onDone: () => void; onShow: () => void }) {
-  const { api, mfa } = useAuth();
+  const { api } = useAuth();
   const [level, setLevel] = useState<Level>(b.level);
   const [title, setTitle] = useState(b.title);
   const [message, setMessage] = useState(b.message);
@@ -113,7 +114,7 @@ function DraftCard({ b, onDone, onShow }: { b: Broadcast; onDone: () => void; on
     } catch (e) { setMsg({ kind: "error", text: (e as Error).message }); }
   }
   const send = () => {
-    if (!confirm(`${when === "now" ? "Send now" : "Schedule"} this ${level} message to subscribers in ${point ? `${radius} km around ${b.area_label ?? "the area"}` : targetText(b)}?`)) return;
+    if (!confirmTwice(`${when === "now" ? "Send now" : "Schedule"} this ${level} message to subscribers in ${point ? `${radius} km around ${b.area_label ?? "the area"}` : targetText(b)}?`, level)) return;
     const start = when === "later" && sendAt ? new Date(sendAt) : new Date();
     act(async () => deliveryText(await api<Delivery>(`/api/v1/visual-disaster/broadcasts/${b.id}/approve`, { method: "POST", body: {
       ...edits, send_at: when === "later" && sendAt ? isoLocal(start) : null,
@@ -166,14 +167,13 @@ function DraftCard({ b, onDone, onShow }: { b: Broadcast; onDone: () => void; on
           <label className="flex items-center gap-1.5"><input type="radio" checked={when === "later"} onChange={() => setWhen("later")} />Schedule</label>
           {when === "later" && <input type="datetime-local" className={`${inputCls} w-auto`} value={sendAt} onChange={(e) => setSendAt(e.target.value)} />}
         </fieldset>
-        {level === "CRITICAL" && !mfa && <Notice kind="warn">CRITICAL messages need a two-factor session.</Notice>}
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={countRecipients}>Count recipients</Button>
           {count != null && <span className="text-sm text-slate-300">{count} subscriber{count === 1 ? "" : "s"}</span>}
           <span className="ml-auto flex flex-wrap gap-2">
             {dirty && <Button disabled={busy} onClick={save}>Save edits</Button>}
             {b.status === "PROPOSED" && <Button variant="ghost" disabled={busy} onClick={reject}>Reject</Button>}
-            <Button variant="danger" disabled={busy || (when === "later" && !sendAt) || (level === "CRITICAL" && !mfa) || message.trim().length < 10}
+            <Button variant="danger" disabled={busy || (when === "later" && !sendAt) || message.trim().length < 10}
                     onClick={send}>{when === "now" ? "Send now" : "Schedule"}</Button>
           </span>
         </div>
@@ -185,7 +185,7 @@ function DraftCard({ b, onDone, onShow }: { b: Broadcast; onDone: () => void; on
 
 /** Operator-written message to a country / province / district / city / map point. */
 function Composer({ onSent, show }: { onSent: () => void; show: Broadcast | null }) {
-  const { api, mfa } = useAuth();
+  const { api } = useAuth();
   const { data: areas } = useSWR<Areas>("/api/v1/visual-disaster/geo/areas", (p: string) => api<Areas>(p));
   const [target, setTarget] = useState<Target>("district");
   const [value, setValue] = useState("Kathmandu");
@@ -198,6 +198,9 @@ function Composer({ onSent, show }: { onSent: () => void; show: Broadcast | null
   const [sendAt, setSendAt] = useState("");
   const [validHours, setValidHours] = useState(12);
   const [preview, setPreview] = useState<number | null>(null);
+  const [note, setNote] = useState("");
+  const [writing, setWriting] = useState(false);
+  const [aiWritten, setAiWritten] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
 
@@ -225,6 +228,20 @@ function Composer({ onSent, show }: { onSent: () => void; show: Broadcast | null
     if (t === "city") { setValue("Kathmandu"); setRadius(8); }
   }
 
+  const areaLabel = target === "country" ? "Nepal (whole country)" : target === "province" ? `${value} Province`
+    : target === "district" ? `${value} district` : target === "city" ? `${value} (within ${radius} km)` : `the area within ${radius} km of the chosen map point`;
+
+  async function writeWithAi() {
+    setWriting(true); setMsg(null);
+    try {
+      const r = await api<{ title: string | null; message: string }>("/api/v1/visual-disaster/broadcasts/ai-draft",
+        { method: "POST", body: { area: areaLabel, level, hazard: "flood", note: note || null } });
+      if (r.title) setTitle(r.title);
+      setMessage(r.message); setAiWritten(true);
+      setMsg({ kind: "ok", text: "The AI wrote the message below. Read it, edit anything, then send." });
+    } catch (e) { setMsg({ kind: "error", text: (e as Error).message }); } finally { setWriting(false); }
+  }
+
   async function doPreview() {
     setMsg(null);
     try { setPreview((await api<{ recipients: number }>("/api/v1/visual-disaster/broadcasts/preview", { method: "POST", body: payload() })).recipients); }
@@ -233,7 +250,7 @@ function Composer({ onSent, show }: { onSent: () => void; show: Broadcast | null
 
   async function send() {
     const label = target === "country" ? "the whole country" : target === "point" ? `${radius} km around the map point` : `${value}${target === "city" ? ` (${radius} km)` : ` ${target}`}`;
-    if (!confirm(`${when === "now" ? "Send now" : "Schedule"} a ${level} message to subscribers in ${label}?`)) return;
+    if (!confirmTwice(`${when === "now" ? "Send now" : "Schedule"} a ${level} message to subscribers in ${label}?`, level)) return;
     setBusy(true); setMsg(null);
     try {
       setMsg({ kind: "ok", text: deliveryText(await api<Delivery>("/api/v1/visual-disaster/broadcasts", { method: "POST", body: payload() })) });
@@ -289,7 +306,13 @@ function Composer({ onSent, show }: { onSent: () => void; show: Broadcast | null
             <Field label="Valid for (hours)"><input type="number" min={0} max={168} className={inputCls} value={validHours} onChange={(e) => setValidHours(+e.target.value)} /></Field>
           </div>
           <Field label="Title"><input className={inputCls} value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} /></Field>
-          <Field label="Message" hint="The system adds the validity time and a source line.">
+          <div className="space-y-2 rounded-lg border border-violet-500/30 bg-violet-500/5 p-3">
+            <Field label="What is happening? (for the AI — optional)" hint="e.g. “Rapti river rising after 80 mm rain since morning, Bhalubang bridge closed”. The AI only uses what you write here plus the area and level.">
+              <textarea className={`${inputCls} h-16`} value={note} maxLength={600} onChange={(e) => setNote(e.target.value)} />
+            </Field>
+            <Button disabled={writing} onClick={writeWithAi}>{writing ? "AI is writing…" : "✦ Write the message with AI"}</Button>
+          </div>
+          <Field label={aiWritten ? "Message (✦ written by AI — edit freely)" : "Message"} hint="Sent exactly as shown. The system adds the validity time and a source line.">
             <textarea className={`${inputCls} h-32`} value={message} maxLength={2000} onChange={(e) => setMessage(e.target.value)} />
           </Field>
           <fieldset className="flex flex-wrap items-center gap-4 text-sm">
@@ -297,11 +320,10 @@ function Composer({ onSent, show }: { onSent: () => void; show: Broadcast | null
             <label className="flex items-center gap-1.5"><input type="radio" checked={when === "later"} onChange={() => setWhen("later")} />Schedule</label>
             {when === "later" && <input type="datetime-local" className={`${inputCls} w-auto`} value={sendAt} onChange={(e) => setSendAt(e.target.value)} />}
           </fieldset>
-          {level === "CRITICAL" && !mfa && <Notice kind="warn">CRITICAL messages need a two-factor session.</Notice>}
           <div className="flex flex-wrap items-center gap-2">
             <Button onClick={doPreview} disabled={target === "point" && !point}>Count recipients</Button>
             {preview != null && <span className="text-sm text-slate-300">{preview} subscriber{preview === 1 ? "" : "s"} will receive it</span>}
-            <Button variant="danger" className="ml-auto" disabled={busy || (target === "point" && !point) || (when === "later" && !sendAt) || (level === "CRITICAL" && !mfa)} onClick={send}>
+            <Button variant="danger" className="ml-auto" disabled={busy || (target === "point" && !point) || (when === "later" && !sendAt)} onClick={send}>
               {when === "now" ? "Send now" : "Schedule"}
             </Button>
           </div>
@@ -348,7 +370,7 @@ function History({ list, onChange, onShow }: { list: Broadcast[] | undefined; on
                 <StatusPill status={b.status} /><AlertBadge level={b.level} />
                 <span className="font-medium">{b.title}</span>
                 <span className="text-xs text-slate-400">
-                  → {targetText(b)} · {b.source === "ai_analyst" ? `AI draft${b.edited ? ", edited" : ""}` : "operator"}
+                  → {targetText(b)} · {b.source === "ai_analyst" ? `AI draft${b.edited ? ", edited" : ""}` : b.source === "warning" ? "approved warning" : "operator"}
                   {" · "}{b.status === "SENT" ? `sent ${fmtTime(b.sent_at)} to ${b.recipients ?? 0}`
                     : b.status === "REJECTED" ? `rejected ${fmtTime(b.reviewed_at)}`
                     : b.status === "SCHEDULED" ? `for ${fmtTime(b.send_at)}` : fmtTime(b.updated_at ?? b.created_at)}

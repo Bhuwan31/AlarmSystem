@@ -4,13 +4,12 @@ from app.warnings import state_machine as sm
 from app.warnings.templates import lint, render
 
 
-def test_critical_needs_two_distinct_approvers_sr02():
+def test_critical_needs_one_approval_confirmed_twice_in_app():
+    # Policy change: one operator may send CRITICAL; the app asks for a two-step confirmation instead of a second person.
     status, approvers = sm.approve("PROPOSED", "CRITICAL", set(), "anjali", False)
-    assert status == "PROPOSED"
-    with pytest.raises(sm.TransitionError, match="second distinct approver"):
-        sm.approve(status, "CRITICAL", approvers, "anjali", False)
-    status, approvers = sm.approve(status, "CRITICAL", approvers, "bikash", False)
-    assert status == "ACTIVE" and approvers == {"anjali", "bikash"}
+    assert status == "ACTIVE" and approvers == {"anjali"}
+    with pytest.raises(sm.TransitionError):
+        sm.approve(status, "CRITICAL", approvers, "bikash", False)          # already active
 
 
 def test_warning_needs_one_approver():

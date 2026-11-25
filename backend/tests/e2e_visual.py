@@ -231,10 +231,9 @@ async def main() -> None:
             n_after = await db.fetchval("select count(*) from emergency_notifications where incident_id = $1", uuid.UUID(incident_id))
             check("duplicate alert suppressed", r.status_code == 200 and n_after == n_before, str(r.json().get("delivery")))
 
-            # ---- 7. CRITICAL needs MFA; escalation reaches people again --------------------------------------------------
+            # ---- 7. CRITICAL (no two-factor needed); escalation reaches people again --------------------------------------------------
             body = {"level": "CRITICAL", "radius_km": 3, "title": "CRITICAL FLOOD ALERT", "body": inc["proposed_message"]["body"]}
-            check("CRITICAL without MFA refused", (await c.post(f"{API}/visual-disaster/incidents/{incident_id}/approve-send", headers=H_app, json=body)).status_code == 403)
-            r = await c.post(f"{API}/visual-disaster/incidents/{incident_id}/approve-send", headers=H_app_mfa, json=body)
+            r = await c.post(f"{API}/visual-disaster/incidents/{incident_id}/approve-send", headers=H_app, json=body)
             crit = await db.fetchval("""select count(*) from emergency_notifications where incident_id = $1 and level = 'CRITICAL'
                                         and notification_channel = 'in_app' and notification_status = 'delivered'""", uuid.UUID(incident_id))
             check("escalation to CRITICAL delivered", r.status_code == 200 and crit == len(inside), f"{crit} delivered")

@@ -84,6 +84,10 @@ class Settings(BaseSettings):
     twilio_account_sid: str = ""                 # SMS via Twilio's REST API
     twilio_auth_token: str = ""
     twilio_from: str = ""
+    ntfy_server: str = "https://ntfy.sh"   # phone alerts via the ntfy app; or your own ntfy server
+    mass_alert_ntfy_topic: str = ""        # every sent message is also published here ("send to all phones"); empty = off
+    ntfy_token: str = ""                   # only for a protected/self-hosted ntfy server
+    public_app_url: str = ""               # link opened when a phone notification is tapped (optional)
     vapid_public_key: str = ""                   # Web Push (needs the pywebpush package)
     vapid_private_key: str = ""
     vapid_subject: str = ""

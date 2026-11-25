@@ -15,7 +15,7 @@ const VisualMap = dynamic(() => import("@/components/VisualMap"), { ssr: false }
 interface Alert { id: string; kind: "incident" | "broadcast"; level: string; title: string; body: string; distance_km: number | null; created_at: string;
   read_at: string | null; acknowledged_at: string | null; latitude: number | null; longitude: number | null; radius_km: number | null }
 interface Sub { subscribed: boolean; consent: boolean; latitude?: number | null; longitude?: number | null; home_label?: string | null; district?: string | null;
-  province?: string | null; channels?: Record<string, boolean>; phone?: string | null; email?: string | null; consent_at?: string | null }
+  province?: string | null; channels?: Record<string, boolean>; phone?: string | null; email?: string | null; consent_at?: string | null; ntfy_topic?: string | null }
 
 export default function AlertsPage() {
   const { user, ready } = useAuth();
@@ -86,10 +86,12 @@ function Subscription() {
   const { api } = useAuth();
   const { data: sub, mutate } = useSWR<Sub>("my-sub", () => api<Sub>("/api/v1/visual-disaster/subscription"));
   const { data: areas } = useSWR<Areas>("/api/v1/visual-disaster/geo/areas", (p: string) => api<Areas>(p));
-  const { data: ch } = useSWR("/api/v1/visual-disaster/channels", (p: string) => api<{ configured: Record<string, boolean> }>(p));
+  const { data: ch } = useSWR("/api/v1/visual-disaster/channels", (p: string) => api<{ configured: Record<string, boolean>; external_sending_enabled: boolean; ntfy_server?: string }>(p));
   const [home, setHome] = useState<{ lat: number; lon: number } | null>(null);
   const [district, setDistrict] = useState("");
-  const [channels, setChannels] = useState<Record<string, boolean>>({ in_app: true, push: false, sms: false, email: false });
+  const [channels, setChannels] = useState<Record<string, boolean>>({ in_app: true, ntfy: false, push: false, sms: false, email: false });
+  const [topic, setTopic] = useState("");
+  const [testing, setTesting] = useState(false);
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [consent, setConsent] = useState(false);
@@ -102,7 +104,7 @@ function Subscription() {
     setLoaded(true);
     if (sub.latitude != null && sub.longitude != null) setHome({ lat: sub.latitude, lon: sub.longitude });
     setDistrict(sub.district ?? ""); setChannels({ in_app: true, ...(sub.channels ?? {}) });
-    setPhone(sub.phone ?? ""); setEmail(sub.email ?? ""); setConsent(sub.subscribed);
+    setPhone(sub.phone ?? ""); setEmail(sub.email ?? ""); setConsent(sub.subscribed); setTopic(sub.ntfy_topic ?? "");
   }, [sub, loaded]);
 
   async function pickHome(lat: number, lon: number) {
@@ -110,21 +112,47 @@ function Subscription() {
     try { const r = await api<{ district: string }>(`/api/v1/visual-disaster/geo/locate?lat=${lat}&lon=${lon}`); setDistrict(r.district); } catch { /* keep */ }
   }
 
+  const missing = [
+    !home && "choose your location on the map (or press “Use my current location”)",
+    channels.ntfy && topic.length < 8 && "type a topic name for the ntfy app (at least 8 characters)",
+    !consent && "tick the “I agree” box",
+  ].filter(Boolean) as string[];
+
   async function save() {
     setMsg(null);
+    if (missing.length) { setMsg({ kind: "error", text: `Almost there — please ${missing.join(", then ")}.` }); return; }
     try {
       await api("/api/v1/visual-disaster/subscription", { method: "PUT", body: { consent, latitude: home?.lat, longitude: home?.lon, district: district || null,
-        channels, phone: phone || null, email: email || null } });
+        channels, phone: phone || null, email: email || null, ntfy_topic: channels.ntfy && topic ? topic.trim() : null } });
       setMsg({ kind: "ok", text: "Saved. You will receive approved alerts that cover your location or district." });
       mutate();
     } catch (e) { setMsg({ kind: "error", text: (e as Error).message }); }
+  }
+
+  /** Easy to type, still hard to guess: amhews-alert-4821 */
+  function newTopic() {
+    const a = new Uint16Array(1);
+    crypto.getRandomValues(a);
+    setTopic(`amhews-alert-${1000 + (a[0] % 9000)}`);
+  }
+
+  async function testPhone() {
+    setMsg(null); setTesting(true);
+    try {
+      const r = await api<{ results: Record<string, { status: string; error: string | null }>; external_sending_enabled: boolean }>(
+        "/api/v1/visual-disaster/subscription/test", { method: "POST" });
+      const parts = Object.entries(r.results).map(([c, v]) => `${c === "ntfy" ? "phone (ntfy)" : c}: ${v.status.replaceAll("_", " ")}${v.error ? ` — ${v.error}` : ""}`);
+      const sent = Object.values(r.results).some((v) => v.status === "sent");
+      setMsg({ kind: sent ? "ok" : "error", text: sent ? `Test sent — check your phone. (${parts.join("; ")})`
+        : `Not sent: ${parts.join("; ")}.${!r.external_sending_enabled ? " Phone sending is switched off on this server (NOTIFY_EXTERNAL_ENABLED)." : ""}` });
+    } catch (e) { setMsg({ kind: "error", text: (e as Error).message }); } finally { setTesting(false); }
   }
 
   async function optOut() {
     if (!confirm("Stop all location-based alerts and delete your saved location and phone number?")) return;
     await api("/api/v1/visual-disaster/subscription", { method: "DELETE" });
     setConsent(false); setHome(null); setPhone(""); setLoaded(false); mutate();
-    setMsg({ kind: "info", text: "You have opted out. Your location and phone number were deleted." });
+    setMsg({ kind: "info", text: "You have opted out: your location and phone number were deleted and nothing is sent to your phone. Your topic name stays the same, so to come back just choose your location, tick “I agree” and Subscribe — nothing to change on the phone." });
   }
 
   return (
@@ -148,23 +176,54 @@ function Subscription() {
         </Field>
         <fieldset className="space-y-1.5">
           <legend className="mb-1 text-xs text-slate-400">How to reach me</legend>
-          {(["in_app", "push", "sms", "email"] as const).map((c) => (
+          {(["in_app", "ntfy", "push", "sms", "email"] as const).map((c) => (
             <label key={c} className="flex items-center gap-2">
-              <input type="checkbox" checked={c === "in_app" || !!channels[c]} disabled={c === "in_app"} onChange={(e) => setChannels({ ...channels, [c]: e.target.checked })} />
-              {{ in_app: "In this app (always on)", push: "Push notification", sms: "SMS", email: "Email" }[c]}
+              <input type="checkbox" checked={c === "in_app" || (!!channels[c] && !!ch?.configured[c])} disabled={c === "in_app" || (!!ch && !ch.configured[c])} onChange={(e) => { setChannels({ ...channels, [c]: e.target.checked }); if (c === "ntfy" && e.target.checked && !topic) newTopic(); }} />
+              {{ in_app: "In this app (always on)", ntfy: "Phone notification (free ntfy app)", push: "Push notification", sms: "SMS", email: "Email" }[c]}
               {ch && !ch.configured[c] && <span className="text-xs text-slate-500">— not available on this server yet</span>}
             </label>
           ))}
         </fieldset>
-        {channels.sms && <Field label="Mobile number"><input className={inputCls} value={phone} placeholder="+977 98…" onChange={(e) => setPhone(e.target.value)} /></Field>}
-        {channels.email && <Field label="Email (blank = account email)"><input className={inputCls} type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></Field>}
+        {channels.ntfy && (
+          <div className="space-y-2 rounded-lg border border-sky-500/30 bg-sky-500/5 p-3">
+            <ol className="list-decimal space-y-1 pl-5 text-xs text-slate-300">
+              <li>Install <b>ntfy</b> on your phone (free, from Google Play or the App Store).</li>
+              <li>In ntfy tap <b>+</b> (Subscribe to topic) and type exactly the topic name below.</li>
+              <li>Save here, then press <b>Send a test to my phone</b>.</li>
+            </ol>
+            <Field label="Your topic name (choose one and keep it)" hint="Pick something easy to type, e.g. amhews-ram-ktm. It stays the same until you change it here. Use lowercase, numbers, - and _ (8–64 characters). Avoid very common words: anyone who knows the name can read or send to it.">
+              <div className="flex gap-2">
+                <input className={`${inputCls} font-mono`} value={topic} maxLength={64} placeholder="amhews-ram-ktm" onChange={(e) => setTopic(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))} />
+                <Button onClick={newTopic}>Suggest</Button>
+              </div>
+            </Field>
+            {topic.length >= 8 && sub?.ntfy_topic === topic && (
+              <div className="space-y-1 rounded-md bg-black/30 p-2 text-xs text-slate-300">
+                <p><b>Easiest:</b> open this link on your phone (send it to yourself by chat or e-mail). It shows your alerts and
+                  lets the ntfy app subscribe without typing:</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <a className="break-all font-mono text-sky-300 underline" href={`${ch?.ntfy_server ?? "https://ntfy.sh"}/${topic}`} target="_blank" rel="noreferrer">
+                    {`${ch?.ntfy_server ?? "https://ntfy.sh"}/${topic}`}</a>
+                  <Button className="!px-2 !py-0.5 text-xs" onClick={() => navigator.clipboard?.writeText(`${ch?.ntfy_server ?? "https://ntfy.sh"}/${topic}`)
+                    .then(() => setMsg({ kind: "info", text: "Link copied." })).catch(() => {})}>Copy link</Button>
+                  <Button className="!px-2 !py-0.5 text-xs" onClick={() => navigator.clipboard?.writeText(topic)
+                    .then(() => setMsg({ kind: "info", text: "Topic name copied." })).catch(() => {})}>Copy name</Button>
+                </div>
+                <p>Typing it instead? Topic names are case-sensitive — make sure your phone keyboard did not capitalise the first letter.</p>
+              </div>
+            )}
+          </div>
+        )}
+        {channels.sms && ch?.configured.sms && <Field label="Mobile number"><input className={inputCls} value={phone} placeholder="+977 98…" onChange={(e) => setPhone(e.target.value)} /></Field>}
+        {channels.email && ch?.configured.email && <Field label="Email (blank = account email)"><input className={inputCls} type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></Field>}
         <label className="flex items-start gap-2 rounded-lg border border-white/10 p-3">
           <input type="checkbox" className="mt-1" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-          <span>I agree that this system stores my chosen location{channels.sms ? " and phone number" : ""} to send me disaster alerts for that area. Alerts may come from
+          <span>I agree that this system stores my chosen location{channels.sms && ch?.configured.sms ? " and phone number" : ""} to send me disaster alerts for that area. Alerts may come from
             AI-assisted photo reports reviewed by an operator; they are not official government announcements. I can opt out at any time, which deletes my location.</span>
         </label>
         <div className="flex flex-wrap gap-2">
-          <Button variant="primary" disabled={!consent || !home} onClick={save}>{sub?.subscribed ? "Save changes" : "Subscribe to alerts"}</Button>
+          <Button variant="primary" onClick={save}>{sub?.subscribed ? "Save changes" : "Subscribe to alerts"}</Button>
+          {sub?.subscribed && <Button disabled={testing} onClick={testPhone}>{testing ? "Sending…" : "Send a test to my phone"}</Button>}
           {sub?.subscribed && <Button variant="ghost" onClick={optOut}>Opt out</Button>}
         </div>
         {msg && <Notice kind={msg.kind}>{msg.text}</Notice>}
