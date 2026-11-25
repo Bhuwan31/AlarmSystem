@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import AiAnalystPanel from "@/components/AiAnalystPanel";
 import { Button, Empty, Field, inputCls, LevelBadge, Notice, PageHeader, Panel, SignInPrompt } from "@/components/ui";
 import type { Warning } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -21,6 +22,7 @@ export default function WarningsPage() {
   return (
     <div className="space-y-4">
       <PageHeader title="Warnings" subtitle="Proposals come from the risk engine or operators. WARNING needs 1 approver; CRITICAL needs 2 different approvers signed in with two-factor." />
+      <AiAnalystPanel onProposed={refresh} />
       <div className="flex gap-2" role="tablist">
         {(["current", "history"] as const).map((t) => (
           <Button key={t} role="tab" aria-selected={tab === t} variant={tab === t ? "primary" : "secondary"} onClick={() => setTab(t)}>

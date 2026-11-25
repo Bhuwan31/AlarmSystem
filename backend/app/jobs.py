@@ -119,6 +119,22 @@ async def job_device_health() -> None:
                    on conflict do nothing""", r["station_id"], r["id"])
 
 
+def _ai_interval() -> int:
+    from app.ai import agent
+    return agent.interval_s()
+
+
+async def job_ai_analysis() -> None:
+    from app.ai import agent
+    await agent.run_analysis("auto")
+
+
+async def job_broadcasts() -> None:
+    """Send area broadcasts whose scheduled time has come."""
+    from app.vision.service import send_due_broadcasts
+    await send_due_broadcasts()
+
+
 def build_scheduler() -> AsyncIOScheduler:
     s = get_settings()
     sched = AsyncIOScheduler(job_defaults={"coalesce": True, "max_instances": 1, "misfire_grace_time": 120})
@@ -129,6 +145,9 @@ def build_scheduler() -> AsyncIOScheduler:
     sched.add_job(job_insat, "interval", seconds=s.insat_poll_s, id="insat", next_run_time=_soon(20))
     sched.add_job(job_assess, "interval", seconds=120, id="assess", next_run_time=_soon(60))
     sched.add_job(job_device_health, "interval", seconds=60, id="device_health")
+    sched.add_job(job_broadcasts, "interval", seconds=60, id="broadcasts")
+    if s.ai_enabled:
+        sched.add_job(job_ai_analysis, "interval", seconds=_ai_interval(), id="ai_analysis", next_run_time=_soon(120))
     return sched
 
 

@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import admin, auth, devices, public, shelters, warnings
+from app.api import admin, ai, auth, devices, ml, public, shelters, visual, warnings
 from app.config import get_settings
 from app.db import close_pool, open_pool, pool
 from app.devices import mqtt
@@ -13,7 +13,7 @@ from app.security import hash_password
 from app.jobs import build_scheduler
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
-for noisy in ("engineio.client", "socketio.client", "apscheduler.executors.default"):
+for noisy in ("engineio.client", "socketio.client", "apscheduler.executors.default", "httpx", "httpx2"):
     logging.getLogger(noisy).setLevel(logging.WARNING)
 
 
@@ -22,6 +22,8 @@ async def lifespan(_: FastAPI):
     s = get_settings()
     await open_pool()
     await _bootstrap_admin()
+    from app.vision import service as visual_service
+    await visual_service.requeue_stuck()
     scheduler, mqtt_task = None, None
     if s.enable_scheduler:
         scheduler = build_scheduler()
@@ -56,6 +58,9 @@ app.include_router(devices.router)
 app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(shelters.router)
+app.include_router(ai.router)
+app.include_router(ml.router)
+app.include_router(visual.router)
 
 
 @app.get("/health")

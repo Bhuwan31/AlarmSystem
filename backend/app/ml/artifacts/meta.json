@@ -1,0 +1,895 @@
+{
+ "trained_at": "2026-11-13T13:10:56+00:00",
+ "train_seconds": 8194,
+ "period": {
+  "start": "2019-01-01",
+  "end": "2024-12-31",
+  "test_from": "2023-01-01"
+ },
+ "samples": {
+  "train": 34344,
+  "test": 17376
+ },
+ "class_counts_test": [
+  15633,
+  1257,
+  414,
+  72
+ ],
+ "features": [
+  "flow_now",
+  "flow_change_1d",
+  "flow_change_3d",
+  "flow_mean_7d",
+  "flow_max_30d",
+  "rain_today",
+  "rain_3d",
+  "rain_7d",
+  "rain_30d",
+  "forecast_rain_1d",
+  "forecast_rain_3d",
+  "season_sin",
+  "season_cos",
+  "class_now",
+  "upstream_flow_now",
+  "upstream_change_1d",
+  "upstream_change_3d",
+  "has_upstream",
+  "forecast_rain_7d",
+  "forecast_uncertainty",
+  "soil_moisture",
+  "soil_moisture_change_7d",
+  "headwater_temp_3d",
+  "headwater_warmth_7d",
+  "headwater_snow_30d"
+ ],
+ "rain_only_features": [
+  "rain_today",
+  "rain_3d",
+  "rain_7d",
+  "rain_30d",
+  "forecast_rain_1d",
+  "forecast_rain_3d",
+  "forecast_rain_7d",
+  "forecast_uncertainty",
+  "season_sin",
+  "season_cos"
+ ],
+ "levels": [
+  "NORMAL",
+  "WATCH",
+  "WARNING",
+  "CRITICAL"
+ ],
+ "percentiles": [
+  90.0,
+  97.0,
+  99.5
+ ],
+ "versions": {
+  "scikit-learn": "1.9.1",
+  "xgboost": "3.4.1",
+  "numpy": "2.5.4",
+  "torch": "2.15.0+cpu"
+ },
+ "data_sources": [
+  "GloFAS v4 river discharge (Copernicus EMS) via Open-Meteo flood API",
+  "ERA5 daily rain, soil moisture, headwater temperature and snowfall via Open-Meteo archive API",
+  "AMHEWS gauge readings (Isolation Forest)"
+ ],
+ "upstream": {
+  "Sapta Koshi at Chatara (new)": [
+   "Arun River at Simle",
+   "Tamor River at Mulghat",
+   "Sunkoshi at Pachuwarghat",
+   "Tamakoshi at Busti"
+  ],
+  "Sunkoshi at Pachuwarghat": [
+   "Bhote Koshi at Bahrabise"
+  ],
+  "Bagmati River at Khokana": [
+   "Bagmati River at Gaurighat"
+  ],
+  "Narayani at Devghat": [
+   "Trishuli at Betrawati",
+   "Marsyangdi at Bhakundabesi",
+   "Seti Gandaki at Damauli",
+   "Kali Gandaki at Jomsom",
+   "Myagdi at Mangalghat"
+  ],
+  "Karnali at Chisapani": [
+   "Bheri at Jamu",
+   "Humla Karnali at Lalighat",
+   "West Seti at Dipayal"
+  ]
+ },
+ "stations": [
+  {
+   "id": 254,
+   "name": "Sapta Koshi at Chatara (new)",
+   "lat": 26.855192,
+   "lon": 87.152283,
+   "cell_lat": 26.825,
+   "cell_lon": 87.075,
+   "head_lat": 27.205,
+   "head_lon": 87.152,
+   "upstream": [
+    "Arun River at Simle",
+    "Tamor River at Mulghat",
+    "Sunkoshi at Pachuwarghat",
+    "Tamakoshi at Busti"
+   ],
+   "stats": {
+    "mu": 7.217156124592665,
+    "sd": 0.9845031738556578,
+    "q_watch": 5532.5,
+    "q_warning": 7429.19,
+    "q_critical": 9520.387
+   },
+   "cluster": 0,
+   "pca": [
+    -1.303,
+    -0.454
+   ],
+   "climate": {
+    "annual_rain_mm": 1978.349,
+    "monsoon_share": 0.812,
+    "wet_day_share": 0.407,
+    "p99_daily_rain_mm": 83.925,
+    "log10_median_flow": 2.963,
+    "flashiness": 0.062,
+    "log10_flood_ratio": 0.952
+   }
+  },
+  {
+   "id": 6,
+   "name": "Arun River at Simle",
+   "lat": 26.9233,
+   "lon": 87.1552,
+   "cell_lat": 26.975,
+   "cell_lon": 87.125,
+   "head_lat": 27.273,
+   "head_lon": 87.155,
+   "upstream": [],
+   "stats": {
+    "mu": 6.348012696678524,
+    "sd": 0.7887692992038166,
+    "q_watch": 1760.98,
+    "q_warning": 2249.088,
+    "q_critical": 2814.1780000000017
+   },
+   "cluster": 0,
+   "pca": [
+    0.344,
+    -2.156
+   ],
+   "climate": {
+    "annual_rain_mm": 2667.825,
+    "monsoon_share": 0.701,
+    "wet_day_share": 0.559,
+    "p99_daily_rain_mm": 96.827,
+    "log10_median_flow": 2.635,
+    "flashiness": 0.062,
+    "log10_flood_ratio": 0.769
+   }
+  },
+  {
+   "id": 286,
+   "name": "Tamor River at Mulghat",
+   "lat": 26.9299,
+   "lon": 87.3173,
+   "cell_lat": 26.925,
+   "cell_lon": 87.225,
+   "head_lat": 27.28,
+   "head_lon": 87.317,
+   "upstream": [],
+   "stats": {
+    "mu": 5.401852373617309,
+    "sd": 1.1367704963854925,
+    "q_watch": 1058.25,
+    "q_warning": 1410.2440000000004,
+    "q_critical": 1940.3430000000005
+   },
+   "cluster": 0,
+   "pca": [
+    -0.156,
+    -0.432
+   ],
+   "climate": {
+    "annual_rain_mm": 2441.393,
+    "monsoon_share": 0.832,
+    "wet_day_share": 0.466,
+    "p99_daily_rain_mm": 83.478,
+    "log10_median_flow": 2.192,
+    "flashiness": 0.08,
+    "log10_flood_ratio": 1.007
+   }
+  },
+  {
+   "id": 274,
+   "name": "Sunkoshi at Pachuwarghat",
+   "lat": 27.5537,
+   "lon": 85.7487,
+   "cell_lat": 27.475,
+   "cell_lon": 85.775,
+   "head_lat": 27.904,
+   "head_lon": 85.749,
+   "upstream": [
+    "Bhote Koshi at Bahrabise"
+   ],
+   "stats": {
+    "mu": 5.0465962362918555,
+    "sd": 1.2078879257807282,
+    "q_watch": 908.91,
+    "q_warning": 1204.594,
+    "q_critical": 1607.4300000000003
+   },
+   "cluster": 0,
+   "pca": [
+    0.214,
+    -0.535
+   ],
+   "climate": {
+    "annual_rain_mm": 2281.08,
+    "monsoon_share": 0.774,
+    "wet_day_share": 0.546,
+    "p99_daily_rain_mm": 61.461,
+    "log10_median_flow": 1.928,
+    "flashiness": 0.085,
+    "log10_flood_ratio": 1.204
+   }
+  },
+  {
+   "id": 282,
+   "name": "Tamakoshi at Busti",
+   "lat": 27.6361,
+   "lon": 86.0846,
+   "cell_lat": 27.525,
+   "cell_lon": 86.025,
+   "head_lat": 27.986,
+   "head_lon": 86.085,
+   "upstream": [],
+   "stats": {
+    "mu": 4.268689353455154,
+    "sd": 1.2484315354978568,
+    "q_watch": 453.99,
+    "q_warning": 569.4240000000001,
+    "q_critical": 720.6400000000007
+   },
+   "cluster": 0,
+   "pca": [
+    -0.261,
+    0.204
+   ],
+   "climate": {
+    "annual_rain_mm": 1885.37,
+    "monsoon_share": 0.799,
+    "wet_day_share": 0.499,
+    "p99_daily_rain_mm": 52.734,
+    "log10_median_flow": 1.572,
+    "flashiness": 0.079,
+    "log10_flood_ratio": 1.238
+   }
+  },
+  {
+   "id": 37,
+   "name": "Bhote Koshi at Bahrabise",
+   "lat": 27.786773,
+   "lon": 85.899324,
+   "cell_lat": 27.725,
+   "cell_lon": 85.775,
+   "head_lat": 28.137,
+   "head_lon": 85.899,
+   "upstream": [],
+   "stats": {
+    "mu": 3.8823808713744112,
+    "sd": 1.1803856928173233,
+    "q_watch": 277.61,
+    "q_warning": 350.56,
+    "q_critical": 451.07100000000025
+   },
+   "cluster": 0,
+   "pca": [
+    -0.564,
+    0.739
+   ],
+   "climate": {
+    "annual_rain_mm": 2050.299,
+    "monsoon_share": 0.863,
+    "wet_day_share": 0.408,
+    "p99_daily_rain_mm": 57.981,
+    "log10_median_flow": 1.441,
+    "flashiness": 0.083,
+    "log10_flood_ratio": 1.16
+   }
+  },
+  {
+   "id": 133,
+   "name": "Kankai River at Mainachuli",
+   "lat": 26.709853,
+   "lon": 87.88055,
+   "cell_lat": 26.625,
+   "cell_lon": 87.825,
+   "head_lat": 27.06,
+   "head_lon": 87.881,
+   "upstream": [],
+   "stats": {
+    "mu": 2.7559551440960965,
+    "sd": 1.9438411309765724,
+    "q_watch": 221.33,
+    "q_warning": 477.85,
+    "q_critical": 1032.9880000000023
+   },
+   "cluster": 1,
+   "pca": [
+    2.35,
+    2.286
+   ],
+   "climate": {
+    "annual_rain_mm": 2507.678,
+    "monsoon_share": 0.841,
+    "wet_day_share": 0.426,
+    "p99_daily_rain_mm": 82.009,
+    "log10_median_flow": 0.957,
+    "flashiness": 0.359,
+    "log10_flood_ratio": 1.928
+   }
+  },
+  {
+   "id": 128,
+   "name": "Kamala at Ranibas",
+   "lat": 27.079444,
+   "lon": 86.028333,
+   "cell_lat": 27.025,
+   "cell_lon": 86.125,
+   "head_lat": 27.429,
+   "head_lon": 86.028,
+   "upstream": [],
+   "stats": {
+    "mu": 2.624623581214659,
+    "sd": 1.1032266297366176,
+    "q_watch": 67.55,
+    "q_warning": 129.98,
+    "q_critical": 233.56600000000037
+   },
+   "cluster": 0,
+   "pca": [
+    -0.315,
+    1.791
+   ],
+   "climate": {
+    "annual_rain_mm": 1476.33,
+    "monsoon_share": 0.822,
+    "wet_day_share": 0.355,
+    "p99_daily_rain_mm": 63.167,
+    "log10_median_flow": 0.775,
+    "flashiness": 0.077,
+    "log10_flood_ratio": 1.465
+   }
+  },
+  {
+   "id": 17,
+   "name": "Bagmati River at Khokana",
+   "lat": 27.632222,
+   "lon": 85.293333,
+   "cell_lat": 27.525,
+   "cell_lon": 85.175,
+   "head_lat": 27.982,
+   "head_lon": 85.293,
+   "upstream": [
+    "Bagmati River at Gaurighat"
+   ],
+   "stats": {
+    "mu": 2.7743529416858204,
+    "sd": 1.919186311591567,
+    "q_watch": 180.13,
+    "q_warning": 423.2280000000001,
+    "q_critical": 932.7020000000006
+   },
+   "cluster": 1,
+   "pca": [
+    3.697,
+    1.102
+   ],
+   "climate": {
+    "annual_rain_mm": 2732.727,
+    "monsoon_share": 0.729,
+    "wet_day_share": 0.612,
+    "p99_daily_rain_mm": 72.318,
+    "log10_median_flow": 1.004,
+    "flashiness": 0.491,
+    "log10_flood_ratio": 1.863
+   }
+  },
+  {
+   "id": 16,
+   "name": "Bagmati River at Gaurighat",
+   "lat": 27.713,
+   "lon": 85.3497,
+   "cell_lat": 27.675,
+   "cell_lon": 85.275,
+   "head_lat": 28.063,
+   "head_lon": 85.35,
+   "upstream": [],
+   "stats": {
+    "mu": 2.3396196419462933,
+    "sd": 1.7043912785239017,
+    "q_watch": 96.95,
+    "q_warning": 219.90200000000004,
+    "q_critical": 449.6150000000002
+   },
+   "cluster": 1,
+   "pca": [
+    3.723,
+    1.732
+   ],
+   "climate": {
+    "annual_rain_mm": 3054.853,
+    "monsoon_share": 0.826,
+    "wet_day_share": 0.535,
+    "p99_daily_rain_mm": 83.254,
+    "log10_median_flow": 0.764,
+    "flashiness": 0.518,
+    "log10_flood_ratio": 1.778
+   }
+  },
+  {
+   "id": 75,
+   "name": "East Rapti at Rajaiya",
+   "lat": 27.44,
+   "lon": 84.97,
+   "cell_lat": 27.475,
+   "cell_lon": 84.875,
+   "head_lat": 27.79,
+   "head_lon": 84.97,
+   "upstream": [],
+   "stats": {
+    "mu": 2.6543041716473255,
+    "sd": 1.1009997947580559,
+    "q_watch": 76.8,
+    "q_warning": 116.38200000000003,
+    "q_critical": 169.48000000000033
+   },
+   "cluster": 0,
+   "pca": [
+    0.047,
+    1.215
+   ],
+   "climate": {
+    "annual_rain_mm": 1705.344,
+    "monsoon_share": 0.785,
+    "wet_day_share": 0.383,
+    "p99_daily_rain_mm": 68.945,
+    "log10_median_flow": 0.773,
+    "flashiness": 0.069,
+    "log10_flood_ratio": 1.381
+   }
+  },
+  {
+   "id": 208,
+   "name": "Narayani at Devghat",
+   "lat": 27.71,
+   "lon": 84.43,
+   "cell_lat": 27.675,
+   "cell_lon": 84.325,
+   "head_lat": 28.06,
+   "head_lon": 84.43,
+   "upstream": [
+    "Trishuli at Betrawati",
+    "Marsyangdi at Bhakundabesi",
+    "Seti Gandaki at Damauli",
+    "Kali Gandaki at Jomsom",
+    "Myagdi at Mangalghat"
+   ],
+   "stats": {
+    "mu": 6.909014432177798,
+    "sd": 1.2077799242298088,
+    "q_watch": 5332.35,
+    "q_warning": 6888.696000000001,
+    "q_critical": 7697.414000000002
+   },
+   "cluster": 0,
+   "pca": [
+    -1.563,
+    -0.079
+   ],
+   "climate": {
+    "annual_rain_mm": 1864.641,
+    "monsoon_share": 0.8,
+    "wet_day_share": 0.368,
+    "p99_daily_rain_mm": 70.509,
+    "log10_median_flow": 2.817,
+    "flashiness": 0.058,
+    "log10_flood_ratio": 1.057
+   }
+  },
+  {
+   "id": 302,
+   "name": "Trishuli at Betrawati",
+   "lat": 27.97,
+   "lon": 85.18,
+   "cell_lat": 27.875,
+   "cell_lon": 85.075,
+   "head_lat": 28.32,
+   "head_lon": 85.18,
+   "upstream": [],
+   "stats": {
+    "mu": 4.82693030713432,
+    "sd": 1.2722113379013684,
+    "q_watch": 748.89,
+    "q_warning": 921.57,
+    "q_critical": 1050.4890000000005
+   },
+   "cluster": 0,
+   "pca": [
+    -0.7,
+    -0.174
+   ],
+   "climate": {
+    "annual_rain_mm": 2050.615,
+    "monsoon_share": 0.777,
+    "wet_day_share": 0.437,
+    "p99_daily_rain_mm": 58.681,
+    "log10_median_flow": 1.908,
+    "flashiness": 0.052,
+    "log10_flood_ratio": 1.087
+   }
+  },
+  {
+   "id": 192,
+   "name": "Marsyangdi at Bhakundabesi",
+   "lat": 28.2031524,
+   "lon": 84.4014369,
+   "cell_lat": 28.125,
+   "cell_lon": 84.375,
+   "head_lat": 28.553,
+   "head_lon": 84.401,
+   "upstream": [],
+   "stats": {
+    "mu": 4.884284815611869,
+    "sd": 1.133242291777681,
+    "q_watch": 684.49,
+    "q_warning": 846.6200000000001,
+    "q_critical": 928.8260000000002
+   },
+   "cluster": 0,
+   "pca": [
+    0.667,
+    -1.319
+   ],
+   "climate": {
+    "annual_rain_mm": 3210.784,
+    "monsoon_share": 0.776,
+    "wet_day_share": 0.509,
+    "p99_daily_rain_mm": 74.445,
+    "log10_median_flow": 1.927,
+    "flashiness": 0.04,
+    "log10_flood_ratio": 1.026
+   }
+  },
+  {
+   "id": 259,
+   "name": "Seti Gandaki at Damauli",
+   "lat": 27.964496,
+   "lon": 84.263371,
+   "cell_lat": 27.975,
+   "cell_lon": 84.375,
+   "head_lat": 28.314,
+   "head_lon": 84.263,
+   "upstream": [],
+   "stats": {
+    "mu": 5.054125974646317,
+    "sd": 1.1251740440072637,
+    "q_watch": 789.68,
+    "q_warning": 994.868,
+    "q_critical": 1077.2060000000001
+   },
+   "cluster": 0,
+   "pca": [
+    -0.237,
+    -0.583
+   ],
+   "climate": {
+    "annual_rain_mm": 2468.52,
+    "monsoon_share": 0.789,
+    "wet_day_share": 0.446,
+    "p99_daily_rain_mm": 75.726,
+    "log10_median_flow": 1.999,
+    "flashiness": 0.041,
+    "log10_flood_ratio": 1.019
+   }
+  },
+  {
+   "id": 117,
+   "name": "Kali Gandaki at Jomsom",
+   "lat": 28.7683583,
+   "lon": 83.7064396,
+   "cell_lat": 28.725,
+   "cell_lon": 83.625,
+   "head_lat": 29.118,
+   "head_lon": 83.706,
+   "upstream": [],
+   "stats": {
+    "mu": 3.129790315726818,
+    "sd": 1.157885918820418,
+    "q_watch": 133.9,
+    "q_warning": 161.93,
+    "q_critical": 195.24700000000007
+   },
+   "cluster": 1,
+   "pca": [
+    3.337,
+    -4.488
+   ],
+   "climate": {
+    "annual_rain_mm": 3556.255,
+    "monsoon_share": 0.297,
+    "wet_day_share": 0.773,
+    "p99_daily_rain_mm": 53.209,
+    "log10_median_flow": 1.158,
+    "flashiness": 0.04,
+    "log10_flood_ratio": 1.095
+   }
+  },
+  {
+   "id": 201,
+   "name": "Myagdi at Mangalghat",
+   "lat": 28.341253,
+   "lon": 83.561792,
+   "cell_lat": 28.225,
+   "cell_lon": 83.625,
+   "head_lat": 28.691,
+   "head_lon": 83.562,
+   "upstream": [],
+   "stats": {
+    "mu": 4.636875932298222,
+    "sd": 1.3564043410805404,
+    "q_watch": 625.61,
+    "q_warning": 829.6160000000002,
+    "q_critical": 1056.3290000000006
+   },
+   "cluster": 0,
+   "pca": [
+    0.611,
+    -0.838
+   ],
+   "climate": {
+    "annual_rain_mm": 2716.497,
+    "monsoon_share": 0.781,
+    "wet_day_share": 0.509,
+    "p99_daily_rain_mm": 84.927,
+    "log10_median_flow": 1.906,
+    "flashiness": 0.075,
+    "log10_flood_ratio": 1.066
+   }
+  },
+  {
+   "id": 311,
+   "name": "West Rapti at Bagasoti",
+   "lat": 27.86795,
+   "lon": 82.79885,
+   "cell_lat": 27.825,
+   "cell_lon": 82.675,
+   "head_lat": 28.218,
+   "head_lon": 82.799,
+   "upstream": [],
+   "stats": {
+    "mu": 4.010933493046776,
+    "sd": 1.5266370526885829,
+    "q_watch": 483.17,
+    "q_warning": 1029.8640000000003,
+    "q_critical": 2045.8030000000074
+   },
+   "cluster": 0,
+   "pca": [
+    0.388,
+    2.826
+   ],
+   "climate": {
+    "annual_rain_mm": 1514.188,
+    "monsoon_share": 0.834,
+    "wet_day_share": 0.338,
+    "p99_daily_rain_mm": 61.68,
+    "log10_median_flow": 1.311,
+    "flashiness": 0.293,
+    "log10_flood_ratio": 1.874
+   }
+  },
+  {
+   "id": 10,
+   "name": "Babai at Chepang",
+   "lat": 28.3565601,
+   "lon": 81.7135456,
+   "cell_lat": 28.475,
+   "cell_lon": 81.675,
+   "head_lat": 28.707,
+   "head_lon": 81.714,
+   "upstream": [],
+   "stats": {
+    "mu": 5.3796803229643455,
+    "sd": 1.0874226623649443,
+    "q_watch": 1031.76,
+    "q_warning": 1219.1160000000002,
+    "q_critical": 1444.7790000000005
+   },
+   "cluster": 0,
+   "pca": [
+    -2.001,
+    0.468
+   ],
+   "climate": {
+    "annual_rain_mm": 1469.181,
+    "monsoon_share": 0.815,
+    "wet_day_share": 0.359,
+    "p99_daily_rain_mm": 47.954,
+    "log10_median_flow": 2.11,
+    "flashiness": 0.036,
+    "log10_flood_ratio": 1.022
+   }
+  },
+  {
+   "id": 36,
+   "name": "Bheri at Jamu",
+   "lat": 28.77008,
+   "lon": 81.352052,
+   "cell_lat": 28.875,
+   "cell_lon": 81.325,
+   "head_lat": 29.12,
+   "head_lon": 81.352,
+   "upstream": [],
+   "stats": {
+    "mu": 6.0191514887909205,
+    "sd": 0.9295560411945115,
+    "q_watch": 1594.88,
+    "q_warning": 1900.9560000000001,
+    "q_critical": 2091.6670000000004
+   },
+   "cluster": 0,
+   "pca": [
+    -1.751,
+    -0.568
+   ],
+   "climate": {
+    "annual_rain_mm": 1814.419,
+    "monsoon_share": 0.784,
+    "wet_day_share": 0.427,
+    "p99_daily_rain_mm": 51.308,
+    "log10_median_flow": 2.454,
+    "flashiness": 0.03,
+    "log10_flood_ratio": 0.847
+   }
+  },
+  {
+   "id": 138,
+   "name": "Karnali at Chisapani",
+   "lat": 28.65305556,
+   "lon": 81.28694444,
+   "cell_lat": 28.575,
+   "cell_lon": 81.225,
+   "head_lat": 29.003,
+   "head_lon": 81.287,
+   "upstream": [
+    "Bheri at Jamu",
+    "Humla Karnali at Lalighat",
+    "West Seti at Dipayal"
+   ],
+   "stats": {
+    "mu": 6.8680378556068185,
+    "sd": 0.9750259317907676,
+    "q_watch": 3943.57,
+    "q_warning": 4818.48,
+    "q_critical": 5678.627000000005
+   },
+   "cluster": 0,
+   "pca": [
+    -2.603,
+    0.258
+   ],
+   "climate": {
+    "annual_rain_mm": 1490.943,
+    "monsoon_share": 0.808,
+    "wet_day_share": 0.312,
+    "p99_daily_rain_mm": 49.496,
+    "log10_median_flow": 2.778,
+    "flashiness": 0.047,
+    "log10_flood_ratio": 0.945
+   }
+  },
+  {
+   "id": 94,
+   "name": "Humla Karnali at Lalighat",
+   "lat": 29.151,
+   "lon": 81.5817,
+   "cell_lat": 29.075,
+   "cell_lon": 81.475,
+   "head_lat": 29.501,
+   "head_lon": 81.582,
+   "upstream": [],
+   "stats": {
+    "mu": 5.894054025032595,
+    "sd": 0.90630233943938,
+    "q_watch": 1379.38,
+    "q_warning": 1606.6820000000002,
+    "q_critical": 1773.6080000000006
+   },
+   "cluster": 0,
+   "pca": [
+    -1.428,
+    -0.826
+   ],
+   "climate": {
+    "annual_rain_mm": 1995.078,
+    "monsoon_share": 0.778,
+    "wet_day_share": 0.446,
+    "p99_daily_rain_mm": 57.518,
+    "log10_median_flow": 2.42,
+    "flashiness": 0.028,
+    "log10_flood_ratio": 0.815
+   }
+  },
+  {
+   "id": 316,
+   "name": "West Seti at Dipayal",
+   "lat": 29.246477,
+   "lon": 80.925143,
+   "cell_lat": 29.125,
+   "cell_lon": 81.025,
+   "head_lat": 29.596,
+   "head_lon": 80.925,
+   "upstream": [],
+   "stats": {
+    "mu": 5.064935714426977,
+    "sd": 0.9604648649029865,
+    "q_watch": 622.73,
+    "q_warning": 829.2320000000001,
+    "q_critical": 1244.5520000000033
+   },
+   "cluster": 0,
+   "pca": [
+    -0.27,
+    -0.398
+   ],
+   "climate": {
+    "annual_rain_mm": 2058.03,
+    "monsoon_share": 0.758,
+    "wet_day_share": 0.462,
+    "p99_daily_rain_mm": 74.709,
+    "log10_median_flow": 1.994,
+    "flashiness": 0.096,
+    "log10_flood_ratio": 1.016
+   }
+  },
+  {
+   "id": 180,
+   "name": "Mahakali at Parigaon",
+   "lat": 29.1723,
+   "lon": 80.2606,
+   "cell_lat": 29.125,
+   "cell_lon": 80.175,
+   "head_lat": 29.522,
+   "head_lon": 80.261,
+   "upstream": [],
+   "stats": {
+    "mu": 6.027991467022085,
+    "sd": 0.8651246464182855,
+    "q_watch": 1505.61,
+    "q_warning": 1765.854,
+    "q_critical": 2055.004000000002
+   },
+   "cluster": 0,
+   "pca": [
+    -2.225,
+    0.227
+   ],
+   "climate": {
+    "annual_rain_mm": 1549.93,
+    "monsoon_share": 0.801,
+    "wet_day_share": 0.311,
+    "p99_daily_rain_mm": 61.661,
+    "log10_median_flow": 2.425,
+    "flashiness": 0.038,
+    "log10_flood_ratio": 0.882
+   }
+  }
+ ]
+}

@@ -1,14 +1,17 @@
 """Public read endpoints used by the dashboard and citizen app."""
+import datetime as dt
+
 import httpx
 from fastapi import APIRouter, HTTPException, Query
 
+from app import weather_day, weather_month
 from app import weather_point as weather_point_mod
+from app.ai import data as ai_data
 from app.db import pool
 
 router = APIRouter(prefix="/api/v1", tags=["public"])
 
 GRIDS = {"nepal", "global", "imerg_nepal", "insat_nepal"}
-
 
 def warning_index(value: float | None, warning: float | None) -> float | None:
     """0 = far below warning, 1 = at warning level. Gauge-zero stations: value / warning.
@@ -18,16 +21,13 @@ def warning_index(value: float | None, warning: float | None) -> float | None:
     scale = 5.0 if warning > 60 else warning
     return round(1 - (warning - value) / scale, 3)
 
-
 def _feature(lon, lat, props):
     return {"type": "Feature", "geometry": {"type": "Point", "coordinates": [lon, lat]}, "properties": props}
-
 
 @router.get("/profile")
 async def profile():
     row = await pool().fetchrow("select country_code, name, timezone, languages, bbox, hydromet_authority, drr_authority, emergency_numbers, policies from deployment_profile where id = 1")
     return dict(row)
-
 
 @router.get("/status")
 async def status():
@@ -49,7 +49,6 @@ async def status():
         out.append(r)
     return out
 
-
 @router.get("/weather/grid")
 async def weather_grid(grid: str = Query("nepal")):
     if grid not in GRIDS:
@@ -67,7 +66,6 @@ async def weather_grid(grid: str = Query("nepal")):
     return {"type": "FeatureCollection", "grid": grid,
             "observed_at": rows[0]["observed_at"].isoformat() if rows else None, "features": feats}
 
-
 @router.get("/weather/point")
 async def weather_point(lat: float = Query(ge=-90, le=90), lon: float = Query(ge=-180, le=180)):
     try:
@@ -75,6 +73,37 @@ async def weather_point(lat: float = Query(ge=-90, le=90), lon: float = Query(ge
     except httpx.HTTPError as e:
         raise HTTPException(502, f"weather provider unavailable: {e}") from e
 
+@router.get("/weather/month")
+async def weather_month_place(lat: float = Query(ge=-90, le=90), lon: float = Query(ge=-180, le=180)):
+    """Last 30 days, next 16 days and the same 30 days last year for any place in the world."""
+    try:
+        return await weather_month.place(lat, lon)
+    except httpx.HTTPError as e:
+        raise HTTPException(502, f"weather provider unavailable: {e}") from e
+
+@router.get("/weather/day")
+async def weather_day_card(lat: float = Query(ge=-90, le=90), lon: float = Query(ge=-180, le=180),
+                           date: dt.date | None = Query(None, description="first day of the 8-day window; default today")):
+    """Current conditions, 8 daily summaries and hourly temperature / rain chance / wind from any date."""
+    try:
+        return await weather_day.card(lat, lon, date)
+    except httpx.HTTPError as e:
+        raise HTTPException(502, f"weather provider unavailable: {e}") from e
+
+@router.get("/weather/world-month")
+async def weather_world_month():
+    """Thirty-day summary and 7-day outlook for major cities on every continent."""
+    try:
+        return await weather_month.world()
+    except httpx.HTTPError as e:
+        raise HTTPException(502, f"weather provider unavailable: {e}") from e
+
+@router.get("/geocode")
+async def geocode(q: str = Query(min_length=2, max_length=100)):
+    try:
+        return await ai_data.geocode(q)
+    except httpx.HTTPError as e:
+        raise HTTPException(502, f"place search unavailable: {e}") from e
 
 @router.get("/weather/summary")
 async def weather_summary():
@@ -84,7 +113,6 @@ async def weather_summary():
                   max(rain_24h_forecast_mm) rain24_max, avg(humidity_pct) rh_avg, max(observed_at) observed_at
            from weather_grid where grid = 'nepal' and received_at = (select max(received_at) from weather_grid where grid = 'nepal')""")
     return dict(r)
-
 
 @router.get("/stations")
 async def stations(kind: str = Query("river", pattern="^(river|rain|device_river|device_rain)$")):
@@ -114,7 +142,6 @@ async def stations(kind: str = Query("river", pattern="^(river|rain|device_river
         }))
     return {"type": "FeatureCollection", "kind": kind, "features": feats}
 
-
 @router.get("/stations/{station_id}/series")
 async def series(station_id: int, variable: str = "water_level_m", hours: int = Query(48, le=24 * 30)):
     rows = await pool().fetch(
@@ -123,7 +150,6 @@ async def series(station_id: int, variable: str = "water_level_m", hours: int = 
            order by observed_at""", station_id, variable, hours)
     return [{"t": r["observed_at"].isoformat(), "v": r["value"], "q": r["quality"]} for r in rows]
 
-
 @router.get("/risk/summary")
 async def risk_summary():
     rows = await pool().fetch(
@@ -131,7 +157,6 @@ async def risk_summary():
              select distinct on (station_id) station_id, level from risk_assessments order by station_id, computed_at desc) x
            group by level""")
     return {r["level"]: r["n"] for r in rows}
-
 
 @router.get("/warnings")
 async def list_warnings(status: str | None = None):
@@ -144,7 +169,6 @@ async def list_warnings(status: str | None = None):
            order by case w.level when 'CRITICAL' then 0 when 'WARNING' then 1 else 2 end, w.created_at desc
            limit 200""", status)
     return [dict(r) for r in rows]
-
 
 @router.get("/stations/{station_id}")
 async def station_detail(station_id: int):
@@ -168,7 +192,6 @@ async def station_detail(station_id: int):
     return {"station": dict(s), "latest": [dict(r) for r in latest], "risk_history": [dict(r) for r in risk],
             "warnings": [dict(r) for r in warns], "quality_events": [dict(r) for r in events],
             "warning_index": warning_index(next((r["value"] for r in latest if r["variable"] == "water_level_m"), None), s["warning_level"])}
-
 
 @router.get("/risk/near")
 async def risk_near(lat: float = Query(ge=-90, le=90), lon: float = Query(ge=-180, le=180), radius_km: float = Query(30, le=100)):
@@ -202,7 +225,6 @@ async def risk_near(lat: float = Query(ge=-90, le=90), lon: float = Query(ge=-18
     return {"level": worst, "rivers": [dict(r) for r in rivers], "warnings": [dict(r) for r in warns],
             "shelters": [dict(r) for r in shelters], "emergency_numbers": profile["emergency_numbers"],
             "note": "Decision support only. Follow instructions from police and local officials on site."}
-
 
 @router.get("/quality-events")
 async def quality_events(open_only: bool = True, limit: int = Query(100, le=500)):

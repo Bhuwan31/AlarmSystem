@@ -4,6 +4,7 @@ import useSWR from "swr";
 
 import { fetcher } from "@/lib/api";
 import { fmt, tempColor } from "@/lib/colors";
+import WeatherCard from "./WeatherCard";
 
 interface PointWeather {
   lat: number; lon: number; elevation_m: number | null; observed_at: string | null;
@@ -25,7 +26,9 @@ const HEAT_STYLE: Record<PointWeather["heat"]["level"], [string, string]> = {
 const COMPASS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 const compass = (deg: number | null) => (deg == null ? "—" : COMPASS[Math.round(deg / 45) % 8]);
 
-export default function LocationPanel({ lng, lat, onClose }: { lng: number; lat: number; onClose: () => void }) {
+export default function LocationPanel({ lng, lat, date, onDate, onClose }: {
+  lng: number; lat: number; date: string | null; onDate: (d: string | null) => void; onClose: () => void;
+}) {
   const { data, error, isLoading } = useSWR<PointWeather>(`/api/v1/weather/point?lat=${lat.toFixed(3)}&lon=${lng.toFixed(3)}`, fetcher);
   const c = data?.current;
 
@@ -33,12 +36,15 @@ export default function LocationPanel({ lng, lat, onClose }: { lng: number; lat:
     <div className="space-y-3 text-sm text-slate-800">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <div className="font-semibold">Selected location — now</div>
+          <div className="font-semibold">Selected location</div>
           <div className="text-xs text-slate-500">{lat.toFixed(3)}°, {lng.toFixed(3)}° · {data?.elevation_m != null ? `${Math.round(data.elevation_m)} m elevation` : "…"}</div>
         </div>
         <button onClick={onClose} className="rounded-md bg-slate-100 px-2 py-1 text-xs hover:bg-slate-200">Close ✕</button>
       </div>
 
+      <WeatherCard lat={lat} lon={lng} date={date} onDate={onDate} />
+
+      <div className="pt-1 text-xs font-semibold text-slate-600">More detail — right now</div>
       {isLoading && <p className="text-slate-500">Loading current conditions…</p>}
       {error && <p className="text-red-700">Could not load weather for this place.</p>}
 
@@ -86,6 +92,9 @@ export default function LocationPanel({ lng, lat, onClose }: { lng: number; lat:
             <Spark values={data.outlook_24h.map((o) => o.wind_kmh)} color="#5b3fa6" label="Wind km/h" />
           </div>
 
+          <a href={`/climate?lat=${lat.toFixed(3)}&lon=${lng.toFixed(3)}`} className="block rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-medium text-sky-800 hover:bg-sky-100">
+            ◷ Last 30 days + next 16 days for this place →
+          </a>
           <p className="text-[11px] text-slate-400">The map shows this place in 3D with real terrain. {data.source}. Observed {data.observed_at} UTC.</p>
         </>
       )}

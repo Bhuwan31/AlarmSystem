@@ -9,6 +9,7 @@ import { useMapData, useStatus } from "@/lib/hooks";
 import { DEFAULT_FILTERS, DEFAULT_LAYERS, type Filters, type Layers } from "@/lib/layers";
 import LayerPanel from "./LayerPanel";
 import LocationPanel from "./LocationPanel";
+import { todayIso } from "./WeatherCard";
 
 const WeatherGlobe = dynamic(() => import("./WeatherGlobe"), {
   ssr: false,
@@ -23,6 +24,7 @@ export default function MapExplorer({ onClose }: { onClose?: () => void }) {
   const [layers, setLayers] = useState<Layers>(DEFAULT_LAYERS);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [focus, setFocus] = useState<{ lng: number; lat: number } | null>(null);
+  const [date, setDate] = useState<string | null>(null);   // first day of the weather card; null = today
   const [panelOpen, setPanelOpen] = useState(() => typeof window === "undefined" || window.innerWidth >= 768);
 
   useEffect(() => {
@@ -56,15 +58,22 @@ export default function MapExplorer({ onClose }: { onClose?: () => void }) {
         )}
       </div>
 
+      <div className="absolute left-1/2 top-3 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs text-slate-800 shadow-lg max-sm:left-auto max-sm:right-3 max-sm:translate-x-0">
+        <label htmlFor="map-date" className="font-semibold">📅 Weather date</label>
+        <input id="map-date" type="date" value={date ?? todayIso()} max={todayIso(15 - 7)} onChange={(e) => setDate(e.target.value || null)}
+          className="rounded border border-slate-300 bg-white px-1 py-0.5" />
+        {date && <button onClick={() => setDate(null)} className="rounded border border-slate-300 px-1.5 py-0.5 hover:bg-slate-100">Today</button>}
+      </div>
+
       {!focus && (
         <div className="pointer-events-none absolute bottom-10 left-1/2 z-10 -translate-x-1/2 rounded-full bg-slate-900/80 px-4 py-2 text-center text-xs text-white">
-          Click anywhere to see that place in 3D with its current weather · click a river or gauge for details
+          Pick a date above, then click anywhere to see that place&apos;s weather card · click a river or gauge for details
         </div>
       )}
 
       {focus && (
-        <div className="absolute bottom-3 right-3 top-3 z-10 w-[360px] max-w-[calc(100%-1.5rem)] overflow-y-auto rounded-xl bg-white/95 p-4 shadow-lg backdrop-blur max-sm:top-auto max-sm:h-[55%]">
-          <LocationPanel lng={focus.lng} lat={focus.lat} onClose={() => setFocus(null)} />
+        <div className="absolute bottom-3 right-3 top-3 z-10 w-[460px] max-w-[calc(100%-1.5rem)] overflow-y-auto rounded-xl bg-white/95 p-3 shadow-lg backdrop-blur max-sm:top-auto max-sm:h-[55%]">
+          <LocationPanel lng={focus.lng} lat={focus.lat} date={date} onDate={setDate} onClose={() => setFocus(null)} />
         </div>
       )}
     </div>

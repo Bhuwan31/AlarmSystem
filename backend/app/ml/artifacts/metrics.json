@@ -1,0 +1,656 @@
+{
+ "classification": {
+  "baseline_today_class": {
+   "accuracy": 0.94,
+   "macro_f1": 0.581,
+   "recall_per_class": [
+    0.989,
+    0.565,
+    0.357,
+    0.208
+   ],
+   "warning_recall": 0.397,
+   "warning_precision": 0.675,
+   "confusion": [
+    [
+     15463,
+     167,
+     3,
+     0
+    ],
+    [
+     457,
+     710,
+     85,
+     5
+    ],
+    [
+     98,
+     155,
+     148,
+     13
+    ],
+    [
+     31,
+     9,
+     17,
+     15
+    ]
+   ]
+  },
+  "logistic_regression": {
+   "accuracy": 0.894,
+   "macro_f1": 0.52,
+   "recall_per_class": [
+    0.922,
+    0.726,
+    0.403,
+    0.5
+   ],
+   "warning_recall": 0.613,
+   "warning_precision": 0.405,
+   "confusion": [
+    [
+     14410,
+     1058,
+     64,
+     101
+    ],
+    [
+     72,
+     913,
+     199,
+     73
+    ],
+    [
+     9,
+     165,
+     167,
+     73
+    ],
+    [
+     0,
+     14,
+     22,
+     36
+    ]
+   ]
+  },
+  "random_forest": {
+   "accuracy": 0.914,
+   "macro_f1": 0.573,
+   "recall_per_class": [
+    0.939,
+    0.788,
+    0.435,
+    0.375
+   ],
+   "warning_recall": 0.56,
+   "warning_precision": 0.517,
+   "confusion": [
+    [
+     14682,
+     883,
+     43,
+     25
+    ],
+    [
+     81,
+     990,
+     165,
+     21
+    ],
+    [
+     8,
+     191,
+     180,
+     35
+    ],
+    [
+     1,
+     14,
+     30,
+     27
+    ]
+   ],
+   "feature_importance": {
+    "flow_now": 0.1295,
+    "forecast_rain_3d": 0.1029,
+    "flow_mean_7d": 0.0969,
+    "class_now": 0.091,
+    "flow_max_30d": 0.0822,
+    "forecast_rain_7d": 0.0583,
+    "rain_30d": 0.0538,
+    "forecast_rain_1d": 0.0472,
+    "soil_moisture": 0.0384,
+    "rain_7d": 0.0375,
+    "season_cos": 0.0341,
+    "season_sin": 0.0317,
+    "flow_change_1d": 0.0312,
+    "rain_3d": 0.0312,
+    "rain_today": 0.0269,
+    "flow_change_3d": 0.026,
+    "headwater_warmth_7d": 0.0199,
+    "headwater_temp_3d": 0.0185,
+    "soil_moisture_change_7d": 0.0138,
+    "forecast_uncertainty": 0.0128,
+    "headwater_snow_30d": 0.005,
+    "upstream_flow_now": 0.0039,
+    "upstream_change_3d": 0.0032,
+    "upstream_change_1d": 0.003,
+    "has_upstream": 0.0011
+   }
+  },
+  "svm": {
+   "accuracy": 0.898,
+   "macro_f1": 0.516,
+   "recall_per_class": [
+    0.923,
+    0.776,
+    0.437,
+    0.236
+   ],
+   "warning_recall": 0.56,
+   "warning_precision": 0.412,
+   "confusion": [
+    [
+     14430,
+     1025,
+     121,
+     57
+    ],
+    [
+     71,
+     976,
+     168,
+     42
+    ],
+    [
+     4,
+     195,
+     181,
+     34
+    ],
+    [
+     0,
+     15,
+     40,
+     17
+    ]
+   ],
+   "trained_on": 12000
+  },
+  "flood_svm_rain_only": {
+   "roc_auc": 0.935,
+   "recall": 0.576,
+   "precision": 0.195,
+   "f1": 0.292,
+   "trained_on": 12000,
+   "confusion": [
+    [
+     15735,
+     1155
+    ],
+    [
+     206,
+     280
+    ]
+   ]
+  }
+ },
+ "regression": {
+  "linear_regression": {
+   "1d": {
+    "rmse_scaled": 0.103,
+    "mae_scaled": 0.0486,
+    "skill_vs_persistence": 0.139,
+    "median_abs_pct_error": 2.8,
+    "median_abs_pct_error_persistence": 2.8,
+    "median_abs_pct_error_high_flow": 5.8
+   },
+   "3d": {
+    "rmse_scaled": 0.1878,
+    "mae_scaled": 0.1088,
+    "skill_vs_persistence": 0.212,
+    "median_abs_pct_error": 7.8,
+    "median_abs_pct_error_persistence": 7.4,
+    "median_abs_pct_error_high_flow": 11.9
+   }
+  },
+  "xgboost": {
+   "1d": {
+    "rmse_scaled": 0.097,
+    "mae_scaled": 0.0407,
+    "skill_vs_persistence": 0.237,
+    "median_abs_pct_error": 1.5,
+    "median_abs_pct_error_persistence": 2.8,
+    "median_abs_pct_error_high_flow": 4.4
+   },
+   "3d": {
+    "rmse_scaled": 0.1565,
+    "mae_scaled": 0.082,
+    "skill_vs_persistence": 0.453,
+    "median_abs_pct_error": 4.2,
+    "median_abs_pct_error_persistence": 7.4,
+    "median_abs_pct_error_high_flow": 8.2
+   },
+   "feature_importance_1d": {
+    "class_now": 0.1217,
+    "forecast_rain_1d": 0.0773,
+    "flow_change_1d": 0.0676,
+    "flow_mean_7d": 0.0538,
+    "rain_7d": 0.049,
+    "flow_now": 0.0466,
+    "flow_change_3d": 0.0445,
+    "season_cos": 0.0435,
+    "forecast_rain_3d": 0.0404,
+    "soil_moisture": 0.0379,
+    "rain_3d": 0.0366,
+    "flow_max_30d": 0.0332,
+    "season_sin": 0.0331,
+    "headwater_warmth_7d": 0.0321,
+    "rain_30d": 0.0314,
+    "soil_moisture_change_7d": 0.0292,
+    "headwater_temp_3d": 0.0292,
+    "rain_today": 0.0288,
+    "forecast_rain_7d": 0.0285,
+    "forecast_uncertainty": 0.0267,
+    "headwater_snow_30d": 0.0266,
+    "upstream_change_1d": 0.0215,
+    "upstream_flow_now": 0.0211,
+    "upstream_change_3d": 0.0202,
+    "has_upstream": 0.0194
+   }
+  },
+  "lstm": {
+   "1d": {
+    "rmse_scaled": 0.0992,
+    "mae_scaled": 0.0462,
+    "skill_vs_persistence": 0.201,
+    "median_abs_pct_error": 2.4,
+    "median_abs_pct_error_persistence": 2.8,
+    "median_abs_pct_error_high_flow": 4.5
+   },
+   "3d": {
+    "rmse_scaled": 0.1637,
+    "mae_scaled": 0.0903,
+    "skill_vs_persistence": 0.401,
+    "median_abs_pct_error": 5.5,
+    "median_abs_pct_error_persistence": 7.4,
+    "median_abs_pct_error_high_flow": 9.1
+   },
+   "train_loss_by_epoch": [
+    0.03312,
+    0.0278,
+    0.02576,
+    0.0249,
+    0.02442,
+    0.02417,
+    0.02378,
+    0.02358,
+    0.02324,
+    0.02295,
+    0.02278,
+    0.02245,
+    0.02223,
+    0.02208,
+    0.02171,
+    0.02151,
+    0.02135,
+    0.02103,
+    0.02091,
+    0.02064
+   ]
+  },
+  "persistence_baseline": {
+   "1d": {
+    "rmse_scaled": 0.111,
+    "mae_scaled": 0.0498,
+    "skill_vs_persistence": 0.0,
+    "median_abs_pct_error": 2.8,
+    "median_abs_pct_error_persistence": 2.8,
+    "median_abs_pct_error_high_flow": 4.7
+   },
+   "3d": {
+    "rmse_scaled": 0.2115,
+    "mae_scaled": 0.1118,
+    "skill_vs_persistence": 0.0,
+    "median_abs_pct_error": 7.4,
+    "median_abs_pct_error_persistence": 7.4,
+    "median_abs_pct_error_high_flow": 9.7
+   }
+  }
+ },
+ "clustering": {
+  "k": 2,
+  "silhouette": 0.445,
+  "features": [
+   "annual_rain_mm",
+   "monsoon_share",
+   "wet_day_share",
+   "p99_daily_rain_mm",
+   "log10_median_flow",
+   "flashiness",
+   "log10_flood_ratio"
+  ],
+  "names": [
+   "medium rivers, wet, flashy",
+   "small rivers, very wet, flashy"
+  ],
+  "sizes": [
+   20,
+   4
+  ],
+  "centres": [
+   {
+    "annual_rain_mm": 2034.44,
+    "monsoon_share": 0.79,
+    "wet_day_share": 0.43,
+    "p99_daily_rain_mm": 66.86,
+    "log10_median_flow": 2.02,
+    "flashiness": 0.07,
+    "log10_flood_ratio": 1.09
+   },
+   {
+    "annual_rain_mm": 2962.88,
+    "monsoon_share": 0.67,
+    "wet_day_share": 0.59,
+    "p99_daily_rain_mm": 72.7,
+    "log10_median_flow": 0.97,
+    "flashiness": 0.35,
+    "log10_flood_ratio": 1.67
+   }
+  ]
+ },
+ "anomaly": {
+  "readings": 16367,
+  "gauges": 195,
+  "flagged": 164,
+  "flagged_share": 0.01,
+  "rule_flagged": 193,
+  "also_flagged_by_rules": 43,
+  "features": [
+   "distance_from_typical",
+   "jump",
+   "rate_per_hour",
+   "gap_hours",
+   "flat_run"
+  ],
+  "note": "Unsupervised: there are no labelled sensor faults, so agreement with the rule-based quality checks is shown instead of accuracy."
+ },
+ "dqn": {
+  "steps": 150000,
+  "episodes": 1667,
+  "episode_days": 90,
+  "gamma": 0.9,
+  "double_dqn": true,
+  "state": [
+   "flow_now",
+   "flow_change_1d",
+   "flow_change_3d",
+   "flow_mean_7d",
+   "flow_max_30d",
+   "rain_today",
+   "rain_3d",
+   "rain_7d",
+   "rain_30d",
+   "forecast_rain_1d",
+   "forecast_rain_3d",
+   "season_sin",
+   "season_cos",
+   "class_now",
+   "upstream_flow_now",
+   "upstream_change_1d",
+   "upstream_change_3d",
+   "has_upstream",
+   "forecast_rain_7d",
+   "forecast_uncertainty",
+   "soil_moisture",
+   "soil_moisture_change_7d",
+   "headwater_temp_3d",
+   "headwater_warmth_7d",
+   "headwater_snow_30d",
+   "alert_normal",
+   "alert_watch",
+   "alert_warning",
+   "alert_critical",
+   "days_since_change"
+  ],
+  "actions": [
+   "NORMAL",
+   "WATCH",
+   "WARNING",
+   "CRITICAL"
+  ],
+  "reward": "miss: -2.5 per level too low; false alarm: -1 per level too high; correct: +1 (flood) / +0.2 (normal); changing level: -0.25",
+  "training_curve": [
+   {
+    "episode": 50,
+    "step": 4500,
+    "mean_reward_per_day": -1.621,
+    "epsilon": 0.95
+   },
+   {
+    "episode": 100,
+    "step": 9000,
+    "mean_reward_per_day": -1.577,
+    "epsilon": 0.9
+   },
+   {
+    "episode": 150,
+    "step": 13500,
+    "mean_reward_per_day": -1.442,
+    "epsilon": 0.85
+   },
+   {
+    "episode": 200,
+    "step": 18000,
+    "mean_reward_per_day": -1.39,
+    "epsilon": 0.8
+   },
+   {
+    "episode": 250,
+    "step": 22500,
+    "mean_reward_per_day": -1.273,
+    "epsilon": 0.75
+   },
+   {
+    "episode": 300,
+    "step": 27000,
+    "mean_reward_per_day": -1.216,
+    "epsilon": 0.7
+   },
+   {
+    "episode": 350,
+    "step": 31500,
+    "mean_reward_per_day": -1.135,
+    "epsilon": 0.65
+   },
+   {
+    "episode": 400,
+    "step": 36000,
+    "mean_reward_per_day": -1.067,
+    "epsilon": 0.6
+   },
+   {
+    "episode": 450,
+    "step": 40500,
+    "mean_reward_per_day": -0.936,
+    "epsilon": 0.55
+   },
+   {
+    "episode": 500,
+    "step": 45000,
+    "mean_reward_per_day": -0.858,
+    "epsilon": 0.5
+   },
+   {
+    "episode": 550,
+    "step": 49500,
+    "mean_reward_per_day": -0.719,
+    "epsilon": 0.45
+   },
+   {
+    "episode": 600,
+    "step": 54000,
+    "mean_reward_per_day": -0.695,
+    "epsilon": 0.4
+   },
+   {
+    "episode": 650,
+    "step": 58500,
+    "mean_reward_per_day": -0.606,
+    "epsilon": 0.35
+   },
+   {
+    "episode": 700,
+    "step": 63000,
+    "mean_reward_per_day": -0.508,
+    "epsilon": 0.3
+   },
+   {
+    "episode": 750,
+    "step": 67500,
+    "mean_reward_per_day": -0.412,
+    "epsilon": 0.25
+   },
+   {
+    "episode": 800,
+    "step": 72000,
+    "mean_reward_per_day": -0.314,
+    "epsilon": 0.2
+   },
+   {
+    "episode": 850,
+    "step": 76500,
+    "mean_reward_per_day": -0.211,
+    "epsilon": 0.15
+   },
+   {
+    "episode": 900,
+    "step": 81000,
+    "mean_reward_per_day": -0.132,
+    "epsilon": 0.1
+   },
+   {
+    "episode": 950,
+    "step": 85500,
+    "mean_reward_per_day": -0.052,
+    "epsilon": 0.05
+   },
+   {
+    "episode": 1000,
+    "step": 90000,
+    "mean_reward_per_day": -0.007,
+    "epsilon": 0.05
+   },
+   {
+    "episode": 1050,
+    "step": 94500,
+    "mean_reward_per_day": 0.033,
+    "epsilon": 0.05
+   },
+   {
+    "episode": 1100,
+    "step": 99000,
+    "mean_reward_per_day": -0.034,
+    "epsilon": 0.05
+   },
+   {
+    "episode": 1150,
+    "step": 103500,
+    "mean_reward_per_day": 0.026,
+    "epsilon": 0.05
+   },
+   {
+    "episode": 1200,
+    "step": 108000,
+    "mean_reward_per_day": -0.023,
+    "epsilon": 0.05
+   },
+   {
+    "episode": 1250,
+    "step": 112500,
+    "mean_reward_per_day": -0.016,
+    "epsilon": 0.05
+   },
+   {
+    "episode": 1300,
+    "step": 117000,
+    "mean_reward_per_day": -0.009,
+    "epsilon": 0.05
+   },
+   {
+    "episode": 1350,
+    "step": 121500,
+    "mean_reward_per_day": -0.011,
+    "epsilon": 0.05
+   },
+   {
+    "episode": 1400,
+    "step": 126000,
+    "mean_reward_per_day": 0.031,
+    "epsilon": 0.05
+   },
+   {
+    "episode": 1450,
+    "step": 130500,
+    "mean_reward_per_day": -0.02,
+    "epsilon": 0.05
+   },
+   {
+    "episode": 1500,
+    "step": 135000,
+    "mean_reward_per_day": 0.027,
+    "epsilon": 0.05
+   },
+   {
+    "episode": 1550,
+    "step": 139500,
+    "mean_reward_per_day": -0.003,
+    "epsilon": 0.05
+   },
+   {
+    "episode": 1600,
+    "step": 144000,
+    "mean_reward_per_day": 0.01,
+    "epsilon": 0.05
+   },
+   {
+    "episode": 1650,
+    "step": 148500,
+    "mean_reward_per_day": -0.021,
+    "epsilon": 0.05
+   }
+  ],
+  "evaluation_2023_2024": {
+   "dqn": {
+    "flood_events": 104,
+    "warned_in_advance": 0.615,
+    "warned_by_onset_day": 0.962,
+    "mean_lead_days": 2.52,
+    "false_alarm_ratio": 0.547,
+    "level_changes_per_station_year": 19.5,
+    "mean_reward_per_day": 0.08
+   },
+   "random_forest": {
+    "flood_events": 104,
+    "warned_in_advance": 0.558,
+    "warned_by_onset_day": 0.971,
+    "mean_lead_days": 2.64,
+    "false_alarm_ratio": 0.483,
+    "level_changes_per_station_year": 18.3,
+    "mean_reward_per_day": 0.101
+   },
+   "threshold_rule_today": {
+    "flood_events": 104,
+    "warned_in_advance": 0.106,
+    "warned_by_onset_day": 1.0,
+    "mean_lead_days": 2.91,
+    "false_alarm_ratio": 0.325,
+    "level_changes_per_station_year": 13.7,
+    "mean_reward_per_day": 0.068
+   }
+  }
+ }
+}

@@ -1,5 +1,9 @@
 services:
+  # Local PostGIS database. Only used when DATABASE_URL is not set (e.g. offline development):
+  #   docker compose --profile localdb up -d
+  # With Supabase, set DATABASE_URL in .env and this service is not started.
   db:
+    profiles: ["localdb"]
     image: postgis/postgis:16-3.4
     environment:
       POSTGRES_DB: amhews
@@ -24,19 +28,43 @@ services:
       - "1883:1883"
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      target: runtime
     env_file: .env
     environment:
-      DATABASE_URL: postgresql://amhews:${POSTGRES_PASSWORD:-amhews}@db:5432/amhews
+      DATABASE_URL: ${DATABASE_URL:-postgresql://amhews:${POSTGRES_PASSWORD:-amhews}@db:5432/amhews}
       MQTT_HOST: mqtt
       CORS_ORIGINS: http://localhost:3000
+    volumes:
+      - visual_data:/data/visual        # submitted photos (private; never served directly)
+      - ./supabase/migrations:/migrations:ro   # python -m app.migrate
     depends_on:
       db:
         condition: service_healthy
+        required: false                 # not started when using Supabase
       mqtt:
         condition: service_started
     ports:
       - "8000:8000"
+
+  # Trains the ML models (docker compose --profile ml run --rm ml-train). Writes backend/app/ml/artifacts/.
+  ml-train:
+    profiles: ["ml"]
+    build:
+      context: ./backend
+      target: ml
+    env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://amhews:${POSTGRES_PASSWORD:-amhews}@db:5432/amhews}
+    volumes:
+      - ./backend:/app
+      - visual_data:/data/visual        # photo store (end-to-end test cleanup, maintenance)
+    depends_on:
+      db:
+        condition: service_healthy
+        required: false                 # not started when using Supabase
+    command: ["python", "-m", "app.ml.train"]
 
   frontend:
     build:
@@ -51,3 +79,4 @@ services:
 volumes:
   db_data:
   mqtt_data:
+  visual_data:
