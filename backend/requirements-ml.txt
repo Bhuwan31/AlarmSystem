@@ -1,0 +1,3 @@
+# Training-only extras (the live backend runs the exported models with numpy). Installed in the "ml" image stage.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.5,<3

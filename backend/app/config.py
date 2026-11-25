@@ -47,6 +47,47 @@ class Settings(BaseSettings):
     mqtt_password: str = ""
     siren_signing_key: str = "change-me-siren-signing-key"
 
+    # AI analyst / assistant (Claude). Needs ANTHROPIC_API_KEY in the environment; off without it.
+    ai_enabled: bool = True
+    ai_provider: str = "auto"            # auto | anthropic | gemini | openai_compat
+    ai_model: str = ""                   # empty = provider default
+    ai_fallback_model: str = ""          # used when the main model is overloaded; empty = provider default
+                                         # (Gemini: gemini-flash-lite-latest), "off" = no fallback
+    gemini_api_key: str = ""             # free tier: https://aistudio.google.com/apikey
+    ai_base_url: str = ""                # openai_compat only, e.g. https://api.groq.com/openai/v1/
+    ai_api_key: str = ""                 # openai_compat only
+    ai_effort: str = "medium"            # analyst: low | medium | high | xhigh | max
+    ai_chat_effort: str = "medium"
+    ai_interval_s: int = 0               # 0 = provider default (30 min Claude, 3 h Gemini free tier)
+    ai_max_iterations: int = 20
+    ai_propose_messages: bool = True      # turn WATCH+ AI findings into draft area messages for approvers
+    ai_chat_per_hour: int = 30           # per user
+
+    # AI visual disaster detection (photos)
+    visual_storage_dir: str = "/data/visual"     # private image store (docker volume); never served directly
+    visual_max_upload_mb: int = 10
+    visual_uploads_per_hour: int = 20            # per user
+    visual_group_km: float = 2.0                 # photos closer than this (and within visual_group_hours) join one incident
+    visual_group_hours: float = 6.0
+    allow_self_registration: bool = True         # citizens can create viewer accounts to report photos / receive alerts
+
+    # Notifications. External channels stay SIMULATED (logged, not sent) until notify_external_enabled=true.
+    notify_external_enabled: bool = False
+    notify_max_per_day: int = 10                 # per recipient, non-CRITICAL; CRITICAL is never rate-limited
+    notify_cooldown_min: int = 30                # same incident, same or lower level → suppressed within this window
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+    smtp_starttls: bool = True
+    twilio_account_sid: str = ""                 # SMS via Twilio's REST API
+    twilio_auth_token: str = ""
+    twilio_from: str = ""
+    vapid_public_key: str = ""                   # Web Push (needs the pywebpush package)
+    vapid_private_key: str = ""
+    vapid_subject: str = ""
+
     # First admin account, created at startup only if no users exist yet
     admin_email: str = ""
     admin_password: str = ""

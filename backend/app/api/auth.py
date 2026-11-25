@@ -9,6 +9,7 @@ from app.security import (LoginThrottle, mint_token, new_totp_secret, otpauth_ur
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 throttle = LoginThrottle()
+reg_throttle = LoginThrottle(max_failures=20, window_s=3600)   # sign-ups per IP per hour
 
 
 class Login(BaseModel):
@@ -49,6 +50,34 @@ async def login(body: Login, request: Request):
         await conn.execute("update users set last_login_at = now() where id = $1", u["id"])
         await audit(conn, str(u["id"]), "auth.login", "user", str(u["id"]), {"ip": ip, "mfa": mfa})
     return {"token": mint_token(str(u["id"]), u["email"], u["role"], mfa), "user": _public(u), "mfa": mfa}
+
+
+class Register(BaseModel):
+    email: str = Field(min_length=5, max_length=200, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    name: str = Field(min_length=2, max_length=100)
+    password: str = Field(min_length=10, max_length=200)
+
+
+@router.post("/register", status_code=201)
+async def register(body: Register, request: Request):
+    """Citizen self-registration: creates a viewer account (report photos, receive location-based alerts).
+    Operator, approver and admin roles are only granted by an admin."""
+    from app.config import get_settings
+    from app.security import hash_password
+    if not get_settings().allow_self_registration:
+        raise HTTPException(403, "self-registration is disabled; ask an administrator for an account")
+    ip = request.client.host if request.client else "unknown"
+    if reg_throttle.blocked(f"reg:{ip}"):
+        raise HTTPException(429, "too many sign-ups from this address; try again later")
+    reg_throttle.fail(f"reg:{ip}")                    # counts sign-ups per address
+    email = body.email.strip().lower()
+    async with pool().acquire() as conn:
+        if await conn.fetchval("select 1 from users where lower(email) = $1", email):
+            raise HTTPException(409, "an account with this email already exists")
+        u = await conn.fetchrow("insert into users (email, name, role, password_hash) values ($1, $2, 'viewer', $3) returning *",
+                                email, body.name.strip(), hash_password(body.password))
+        await audit(conn, str(u["id"]), "auth.register", "user", str(u["id"]), {"ip": ip})
+    return {"token": mint_token(str(u["id"]), u["email"], u["role"], False), "user": _public(u), "mfa": False}
 
 
 @router.get("/me")

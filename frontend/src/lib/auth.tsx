@@ -20,9 +20,14 @@ interface AuthState {
   mfa: boolean;
   ready: boolean;
   login: (email: string, password: string, totp?: string) => Promise<{ ok: true } | { ok: false; mfaRequired: boolean; message: string }>;
+  register: (email: string, name: string, password: string) => Promise<{ ok: true } | { ok: false; message: string }>;
   logout: () => void;
   can: (role: Role) => boolean;
   api: <T = unknown>(path: string, init?: { method?: string; body?: unknown }) => Promise<T>;
+  /** multipart/form-data request (file uploads) */
+  apiForm: <T = unknown>(path: string, form: FormData) => Promise<T>;
+  /** authenticated binary GET → object URL (caller revokes it) */
+  apiBlobUrl: (path: string) => Promise<string>;
 }
 
 const Ctx = createContext<AuthState | null>(null);
@@ -78,6 +83,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return data as T;
   }, [session, logout]);
 
+  const apiForm = useCallback(async <T,>(path: string, form: FormData): Promise<T> => {
+    const res = await fetch(`${API_URL}${path}`, {
+      method: "POST", body: form, headers: session ? { Authorization: `Bearer ${session.token}` } : {},
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 401 && session) logout();
+    if (!res.ok) throw new ApiError(res.status, errorMessage((data as { detail?: unknown }).detail));
+    return data as T;
+  }, [session, logout]);
+
+  const apiBlobUrl = useCallback(async (path: string): Promise<string> => {
+    const res = await fetch(`${API_URL}${path}`, { headers: session ? { Authorization: `Bearer ${session.token}` } : {} });
+    if (!res.ok) throw new ApiError(res.status, `${res.status} ${res.statusText}`);
+    return URL.createObjectURL(await res.blob());
+  }, [session]);
+
+  const register = useCallback<AuthState["register"]>(async (email, name, password) => {
+    const res = await fetch(`${API_URL}/api/v1/auth/register`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, name, password }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, message: errorMessage(data.detail) };
+    const s = { token: data.token, user: data.user, mfa: false };
+    try { sessionStorage.setItem(KEY, JSON.stringify(s)); } catch { /* storage unavailable */ }
+    setSession(s);
+    return { ok: true };
+  }, []);
+
   const login = useCallback<AuthState["login"]>(async (email, password, totp) => {
     const res = await fetch(`${API_URL}/api/v1/auth/login`, {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -95,9 +128,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo<AuthState>(() => ({
-    user: session?.user ?? null, mfa: session?.mfa ?? false, ready, login, logout, api,
+    user: session?.user ?? null, mfa: session?.mfa ?? false, ready, login, register, logout, api, apiForm, apiBlobUrl,
     can: (role) => !!session && RANK[session.user.role] >= RANK[role],
-  }), [session, ready, login, logout, api]);
+  }), [session, ready, login, register, logout, api, apiForm, apiBlobUrl]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -36,3 +36,6 @@ firmware/**/config.h
 
 # Local tooling
 .claude/
+
+# ML training data cache (re-downloadable)
+backend/ml_data/

@@ -12,10 +12,16 @@ async def _init_connection(conn: asyncpg.Connection) -> None:
     await conn.set_type_codec("json", encoder=json.dumps, decoder=json.loads, schema="pg_catalog")
 
 
+def connect_kwargs(url: str) -> dict:
+    """Supabase's transaction pooler (port 6543) cannot keep prepared statements between transactions."""
+    return {"statement_cache_size": 0} if ":6543/" in url else {}
+
+
 async def open_pool() -> asyncpg.Pool:
     global _pool
     if _pool is None:
-        _pool = await asyncpg.create_pool(get_settings().database_url, min_size=1, max_size=10, init=_init_connection)
+        url = get_settings().database_url
+        _pool = await asyncpg.create_pool(url, min_size=1, max_size=10, init=_init_connection, **connect_kwargs(url))
     return _pool
 
 

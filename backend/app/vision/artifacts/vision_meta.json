@@ -1,0 +1,170 @@
+{
+  "created_at": "2026-11-25T01:29:29+00:00",
+  "classes": [
+    "normal",
+    "heavy_rain",
+    "urban_flooding",
+    "river_flooding",
+    "flash_flooding",
+    "road_waterlogging",
+    "rising_water",
+    "landslide",
+    "uncertain"
+  ],
+  "actions": [
+    "NO_ALERT",
+    "MONITOR",
+    "ISSUE_WATCH",
+    "ISSUE_WARNING",
+    "ISSUE_CRITICAL_ALERT",
+    "REQUEST_ADDITIONAL_EVIDENCE"
+  ],
+  "img_size": 128,
+  "mean": [
+    0.48500001430511475,
+    0.4560000002384186,
+    0.4059999883174896
+  ],
+  "std": [
+    0.2290000021457672,
+    0.2240000069141388,
+    0.22499999403953552
+  ],
+  "temperature": 0.5,
+  "state_names": [
+    "p_normal",
+    "p_heavy_rain",
+    "p_urban_flooding",
+    "p_river_flooding",
+    "p_flash_flooding",
+    "p_road_waterlogging",
+    "p_rising_water",
+    "p_landslide",
+    "p_uncertain",
+    "visual_confidence",
+    "visual_entropy",
+    "visual_pc0",
+    "visual_pc1",
+    "visual_pc2",
+    "visual_pc3",
+    "visual_pc4",
+    "visual_pc5",
+    "visual_pc6",
+    "visual_pc7",
+    "visual_pc8",
+    "visual_pc9",
+    "visual_pc10",
+    "visual_pc11",
+    "visual_pc12",
+    "visual_pc13",
+    "visual_pc14",
+    "visual_pc15",
+    "gauge_rain_available",
+    "gauge_rain_1h",
+    "gauge_rain_24h",
+    "model_rain_available",
+    "model_rain_24h",
+    "river_level_available",
+    "river_level",
+    "official_warning_level",
+    "reports_nearby_6h",
+    "prior_level_nearby",
+    "evidence_count",
+    "hour_sin",
+    "hour_cos",
+    "season_sin",
+    "season_cos",
+    "location_manual",
+    "gps_accuracy",
+    "image_age",
+    "alert_none",
+    "alert_watch",
+    "alert_warning",
+    "alert_critical",
+    "steps_since_change"
+  ],
+  "embed_k": 16,
+  "cnn": {
+    "version": "visual-cnn-20261125-0010",
+    "architecture": "DisasterCNN 24-48-96-160 (from scratch)",
+    "parameters": 527521,
+    "best_epoch": 19,
+    "validated_for_alerts": false
+  },
+  "dqn": {
+    "version": "visual-dqn-20261125-0010",
+    "algorithm": "Double DQN, replay 60k, target sync 1000, eps 1\u21920.05, Huber loss, gamma 0.95",
+    "validated_for_alerts": false,
+    "mode": "advisory (shadow)"
+  },
+  "dataset": {
+    "version": "synthetic-5a6b33220b",
+    "name": "synthetic",
+    "sources": [
+      "/app/ml_data/vision/synthetic_v1"
+    ],
+    "images": 3950,
+    "duplicates_dropped": 0,
+    "counts": {
+      "train": {
+        "normal": 615,
+        "heavy_rain": 372,
+        "urban_flooding": 324,
+        "river_flooding": 273,
+        "flash_flooding": 184,
+        "road_waterlogging": 373,
+        "rising_water": 236,
+        "landslide": 160,
+        "uncertain": 267
+      },
+      "val": {
+        "normal": 154,
+        "heavy_rain": 86,
+        "urban_flooding": 55,
+        "river_flooding": 68,
+        "flash_flooding": 44,
+        "road_waterlogging": 70,
+        "rising_water": 38,
+        "landslide": 53,
+        "uncertain": 49
+      },
+      "test": {
+        "normal": 131,
+        "heavy_rain": 42,
+        "urban_flooding": 71,
+        "river_flooding": 59,
+        "flash_flooding": 32,
+        "road_waterlogging": 57,
+        "rising_water": 46,
+        "landslide": 47,
+        "uncertain": 44
+      }
+    },
+    "conditions": {
+      "day": 1756,
+      "fog": 531,
+      "dusk": 532,
+      "overcast": 543,
+      "night": 588
+    },
+    "provenance": {
+      "synthetic:procedural": 3950
+    },
+    "synthetic_only": true,
+    "split_rule": "test = held-out locations; val = held-out incidents; no group crosses sets",
+    "seed": 13
+  },
+  "training_parameters": {
+    "dataset": "/app/ml_data/vision/datasets/synthetic-5a6b33220b",
+    "img_size": 128,
+    "epochs": 30,
+    "patience": 7,
+    "batch": 64,
+    "lr": 0.003,
+    "dqn_episodes": 6000,
+    "seed": 42,
+    "threads": 15
+  },
+  "validation_rule": "validated only if trained on non-synthetic data with test macro-F1 \u2265 0.80 and flood/landslide recall \u2265 0.85; the agent additionally must not miss more events or raise more false alarms than the photo rule",
+  "training_seconds": 4864
+}

@@ -1,0 +1,659 @@
+{
+  "cnn": {
+    "history": [
+      {
+        "epoch": 1,
+        "train_loss": 2.0594,
+        "val_macro_f1": 0.387,
+        "val_accuracy": 0.379
+      },
+      {
+        "epoch": 2,
+        "train_loss": 1.7121,
+        "val_macro_f1": 0.513,
+        "val_accuracy": 0.514
+      },
+      {
+        "epoch": 3,
+        "train_loss": 1.4791,
+        "val_macro_f1": 0.657,
+        "val_accuracy": 0.653
+      },
+      {
+        "epoch": 4,
+        "train_loss": 1.3035,
+        "val_macro_f1": 0.622,
+        "val_accuracy": 0.656
+      },
+      {
+        "epoch": 5,
+        "train_loss": 1.1186,
+        "val_macro_f1": 0.802,
+        "val_accuracy": 0.809
+      },
+      {
+        "epoch": 6,
+        "train_loss": 0.8896,
+        "val_macro_f1": 0.834,
+        "val_accuracy": 0.833
+      },
+      {
+        "epoch": 7,
+        "train_loss": 0.7469,
+        "val_macro_f1": 0.82,
+        "val_accuracy": 0.817
+      },
+      {
+        "epoch": 8,
+        "train_loss": 0.6343,
+        "val_macro_f1": 0.927,
+        "val_accuracy": 0.93
+      },
+      {
+        "epoch": 9,
+        "train_loss": 0.5848,
+        "val_macro_f1": 0.805,
+        "val_accuracy": 0.733
+      },
+      {
+        "epoch": 10,
+        "train_loss": 0.5682,
+        "val_macro_f1": 0.984,
+        "val_accuracy": 0.984
+      },
+      {
+        "epoch": 11,
+        "train_loss": 0.5169,
+        "val_macro_f1": 0.993,
+        "val_accuracy": 0.994
+      },
+      {
+        "epoch": 12,
+        "train_loss": 0.4986,
+        "val_macro_f1": 0.971,
+        "val_accuracy": 0.966
+      },
+      {
+        "epoch": 13,
+        "train_loss": 0.4938,
+        "val_macro_f1": 0.99,
+        "val_accuracy": 0.99
+      },
+      {
+        "epoch": 14,
+        "train_loss": 0.4881,
+        "val_macro_f1": 0.978,
+        "val_accuracy": 0.972
+      },
+      {
+        "epoch": 15,
+        "train_loss": 0.4502,
+        "val_macro_f1": 0.994,
+        "val_accuracy": 0.995
+      },
+      {
+        "epoch": 16,
+        "train_loss": 0.4283,
+        "val_macro_f1": 0.97,
+        "val_accuracy": 0.974
+      },
+      {
+        "epoch": 17,
+        "train_loss": 0.4338,
+        "val_macro_f1": 0.933,
+        "val_accuracy": 0.906
+      },
+      {
+        "epoch": 18,
+        "train_loss": 0.4269,
+        "val_macro_f1": 0.993,
+        "val_accuracy": 0.994
+      },
+      {
+        "epoch": 19,
+        "train_loss": 0.3974,
+        "val_macro_f1": 1.0,
+        "val_accuracy": 1.0
+      },
+      {
+        "epoch": 20,
+        "train_loss": 0.3963,
+        "val_macro_f1": 0.998,
+        "val_accuracy": 0.998
+      },
+      {
+        "epoch": 21,
+        "train_loss": 0.3945,
+        "val_macro_f1": 1.0,
+        "val_accuracy": 1.0
+      },
+      {
+        "epoch": 22,
+        "train_loss": 0.381,
+        "val_macro_f1": 1.0,
+        "val_accuracy": 1.0
+      },
+      {
+        "epoch": 23,
+        "train_loss": 0.3873,
+        "val_macro_f1": 1.0,
+        "val_accuracy": 1.0
+      },
+      {
+        "epoch": 24,
+        "train_loss": 0.3847,
+        "val_macro_f1": 1.0,
+        "val_accuracy": 1.0
+      },
+      {
+        "epoch": 25,
+        "train_loss": 0.3675,
+        "val_macro_f1": 1.0,
+        "val_accuracy": 1.0
+      },
+      {
+        "epoch": 26,
+        "train_loss": 0.3704,
+        "val_macro_f1": 1.0,
+        "val_accuracy": 1.0
+      }
+    ],
+    "validation": {
+      "accuracy": 1.0,
+      "macro_f1": 1.0,
+      "per_class": {
+        "normal": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 154
+        },
+        "heavy_rain": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 86
+        },
+        "urban_flooding": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 55
+        },
+        "river_flooding": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 68
+        },
+        "flash_flooding": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 44
+        },
+        "road_waterlogging": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 70
+        },
+        "rising_water": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 38
+        },
+        "landslide": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 53
+        },
+        "uncertain": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 49
+        }
+      },
+      "confusion_matrix": [
+        [
+          154,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          86,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          55,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          68,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          44,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          70,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          38,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          53,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          49
+        ]
+      ],
+      "ece": 0.005,
+      "flood_or_landslide_recall": 1.0,
+      "flood_or_landslide_precision": 1.0,
+      "n": 617
+    },
+    "test": {
+      "accuracy": 0.998,
+      "macro_f1": 0.998,
+      "per_class": {
+        "normal": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 131
+        },
+        "heavy_rain": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 42
+        },
+        "urban_flooding": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 71
+        },
+        "river_flooding": {
+          "precision": 1.0,
+          "recall": 0.983,
+          "f1": 0.991,
+          "support": 59
+        },
+        "flash_flooding": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 32
+        },
+        "road_waterlogging": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 57
+        },
+        "rising_water": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 46
+        },
+        "landslide": {
+          "precision": 0.979,
+          "recall": 1.0,
+          "f1": 0.989,
+          "support": 47
+        },
+        "uncertain": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 44
+        }
+      },
+      "confusion_matrix": [
+        [
+          131,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          42,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          71,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          58,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          32,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          57,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          46,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          47,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          44
+        ]
+      ],
+      "ece": 0.007,
+      "flood_or_landslide_recall": 1.0,
+      "flood_or_landslide_precision": 1.0,
+      "n": 529,
+      "accuracy_by_condition": {
+        "day": {
+          "n": 212,
+          "accuracy": 1.0
+        },
+        "dusk": {
+          "n": 67,
+          "accuracy": 1.0
+        },
+        "fog": {
+          "n": 77,
+          "accuracy": 1.0
+        },
+        "night": {
+          "n": 115,
+          "accuracy": 0.991
+        },
+        "overcast": {
+          "n": 58,
+          "accuracy": 1.0
+        }
+      }
+    },
+    "temperature": 0.5
+  },
+  "dqn": {
+    "learning_curve": [
+      {
+        "episode": 500,
+        "epsilon": 0.868,
+        "mean_reward": 0.287,
+        "events_detected": 1.0,
+        "false_alarm_rate_quiet": 0.21
+      },
+      {
+        "episode": 1000,
+        "epsilon": 0.736,
+        "mean_reward": 0.328,
+        "events_detected": 1.0,
+        "false_alarm_rate_quiet": 0.152
+      },
+      {
+        "episode": 1500,
+        "epsilon": 0.604,
+        "mean_reward": 0.527,
+        "events_detected": 1.0,
+        "false_alarm_rate_quiet": 0.163
+      },
+      {
+        "episode": 2000,
+        "epsilon": 0.472,
+        "mean_reward": 0.507,
+        "events_detected": 1.0,
+        "false_alarm_rate_quiet": 0.203
+      },
+      {
+        "episode": 2500,
+        "epsilon": 0.341,
+        "mean_reward": 0.438,
+        "events_detected": 1.0,
+        "false_alarm_rate_quiet": 0.173
+      },
+      {
+        "episode": 3000,
+        "epsilon": 0.209,
+        "mean_reward": 0.686,
+        "events_detected": 1.0,
+        "false_alarm_rate_quiet": 0.133
+      },
+      {
+        "episode": 3500,
+        "epsilon": 0.077,
+        "mean_reward": 0.739,
+        "events_detected": 0.997,
+        "false_alarm_rate_quiet": 0.108
+      },
+      {
+        "episode": 4000,
+        "epsilon": 0.05,
+        "mean_reward": 0.739,
+        "events_detected": 1.0,
+        "false_alarm_rate_quiet": 0.125
+      },
+      {
+        "episode": 4500,
+        "epsilon": 0.05,
+        "mean_reward": 0.905,
+        "events_detected": 1.0,
+        "false_alarm_rate_quiet": 0.135
+      },
+      {
+        "episode": 5000,
+        "epsilon": 0.05,
+        "mean_reward": 0.814,
+        "events_detected": 1.0,
+        "false_alarm_rate_quiet": 0.155
+      },
+      {
+        "episode": 5500,
+        "epsilon": 0.05,
+        "mean_reward": 0.95,
+        "events_detected": 0.997,
+        "false_alarm_rate_quiet": 0.105
+      },
+      {
+        "episode": 6000,
+        "epsilon": 0.05,
+        "mean_reward": 1.018,
+        "events_detected": 0.997,
+        "false_alarm_rate_quiet": 0.074
+      }
+    ],
+    "validation": {
+      "agent": {
+        "episodes": 1500,
+        "mean_reward": 1.003,
+        "events": 773,
+        "events_detected": 0.996,
+        "events_warned_early": 0.233,
+        "missed_events": 0.004,
+        "mean_delay_steps": 0.15,
+        "false_alarm_rate_quiet": 0.074,
+        "repeated_alerts_per_episode": 0.136,
+        "level_changes_per_episode": 1.633,
+        "evidence_requests_per_episode": 1.362
+      },
+      "photo_rule_baseline": {
+        "episodes": 1500,
+        "mean_reward": -2.993,
+        "events": 785,
+        "events_detected": 0.995,
+        "events_warned_early": 0.144,
+        "missed_events": 0.005,
+        "mean_delay_steps": 0.88,
+        "false_alarm_rate_quiet": 0.59,
+        "repeated_alerts_per_episode": 0.653,
+        "level_changes_per_episode": 2.689,
+        "evidence_requests_per_episode": 0.0
+      }
+    },
+    "test": {
+      "agent": {
+        "episodes": 1500,
+        "mean_reward": 0.995,
+        "events": 770,
+        "events_detected": 0.997,
+        "events_warned_early": 0.264,
+        "missed_events": 0.003,
+        "mean_delay_steps": 0.09,
+        "false_alarm_rate_quiet": 0.079,
+        "repeated_alerts_per_episode": 0.152,
+        "level_changes_per_episode": 1.681,
+        "evidence_requests_per_episode": 1.461
+      },
+      "photo_rule_baseline": {
+        "episodes": 1500,
+        "mean_reward": -2.933,
+        "events": 789,
+        "events_detected": 0.992,
+        "events_warned_early": 0.169,
+        "missed_events": 0.008,
+        "mean_delay_steps": 0.75,
+        "false_alarm_rate_quiet": 0.643,
+        "repeated_alerts_per_episode": 0.641,
+        "level_changes_per_episode": 2.699,
+        "evidence_requests_per_episode": 0.0
+      }
+    }
+  }
+}
