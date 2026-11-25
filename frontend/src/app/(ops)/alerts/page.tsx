@@ -86,7 +86,7 @@ function Subscription() {
   const { api } = useAuth();
   const { data: sub, mutate } = useSWR<Sub>("my-sub", () => api<Sub>("/api/v1/visual-disaster/subscription"));
   const { data: areas } = useSWR<Areas>("/api/v1/visual-disaster/geo/areas", (p: string) => api<Areas>(p));
-  const { data: ch } = useSWR("/api/v1/visual-disaster/channels", (p: string) => api<{ configured: Record<string, boolean>; external_sending_enabled: boolean }>(p));
+  const { data: ch } = useSWR("/api/v1/visual-disaster/channels", (p: string) => api<{ configured: Record<string, boolean>; external_sending_enabled: boolean; ntfy_server?: string }>(p));
   const [home, setHome] = useState<{ lat: number; lon: number } | null>(null);
   const [district, setDistrict] = useState("");
   const [channels, setChannels] = useState<Record<string, boolean>>({ in_app: true, ntfy: false, push: false, sms: false, email: false });
@@ -114,7 +114,7 @@ function Subscription() {
 
   const missing = [
     !home && "choose your location on the map (or press “Use my current location”)",
-    channels.ntfy && topic.length < 12 && "press “New random” to get a topic name for the ntfy app",
+    channels.ntfy && topic.length < 8 && "type a topic name for the ntfy app (at least 8 characters)",
     !consent && "tick the “I agree” box",
   ].filter(Boolean) as string[];
 
@@ -129,10 +129,11 @@ function Subscription() {
     } catch (e) { setMsg({ kind: "error", text: (e as Error).message }); }
   }
 
+  /** Easy to type, still hard to guess: amhews-alert-4821 */
   function newTopic() {
-    const a = new Uint8Array(9);
+    const a = new Uint16Array(1);
     crypto.getRandomValues(a);
-    setTopic("amhews-" + Array.from(a, (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 14));
+    setTopic(`amhews-alert-${1000 + (a[0] % 9000)}`);
   }
 
   async function testPhone() {
@@ -151,8 +152,7 @@ function Subscription() {
     if (!confirm("Stop all location-based alerts and delete your saved location and phone number?")) return;
     await api("/api/v1/visual-disaster/subscription", { method: "DELETE" });
     setConsent(false); setHome(null); setPhone(""); setLoaded(false); mutate();
-    setTopic("");
-    setMsg({ kind: "info", text: "You have opted out. Your location, phone number and topic name were deleted. To subscribe again: choose your location, tick the phone option (a new topic name is made), tick “I agree”, press Subscribe — and subscribe to the new topic name in the ntfy app." });
+    setMsg({ kind: "info", text: "You have opted out: your location and phone number were deleted and nothing is sent to your phone. Your topic name stays the same, so to come back just choose your location, tick “I agree” and Subscribe — nothing to change on the phone." });
   }
 
   return (
@@ -191,12 +191,27 @@ function Subscription() {
               <li>In ntfy tap <b>+</b> (Subscribe to topic) and type exactly the topic name below.</li>
               <li>Save here, then press <b>Send a test to my phone</b>.</li>
             </ol>
-            <Field label="Your private topic name" hint="Anyone who knows this name can read your alerts, so keep the random one. Letters, numbers, - and _ (12–64 characters).">
+            <Field label="Your topic name (choose one and keep it)" hint="Pick something easy to type, e.g. amhews-ram-ktm. It stays the same until you change it here. Use lowercase, numbers, - and _ (8–64 characters). Avoid very common words: anyone who knows the name can read or send to it.">
               <div className="flex gap-2">
-                <input className={`${inputCls} font-mono`} value={topic} maxLength={64} placeholder="amhews-…" onChange={(e) => setTopic(e.target.value.replace(/[^A-Za-z0-9_-]/g, ""))} />
-                <Button onClick={newTopic}>New random</Button>
+                <input className={`${inputCls} font-mono`} value={topic} maxLength={64} placeholder="amhews-ram-ktm" onChange={(e) => setTopic(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))} />
+                <Button onClick={newTopic}>Suggest</Button>
               </div>
             </Field>
+            {topic.length >= 8 && sub?.ntfy_topic === topic && (
+              <div className="space-y-1 rounded-md bg-black/30 p-2 text-xs text-slate-300">
+                <p><b>Easiest:</b> open this link on your phone (send it to yourself by chat or e-mail). It shows your alerts and
+                  lets the ntfy app subscribe without typing:</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <a className="break-all font-mono text-sky-300 underline" href={`${ch?.ntfy_server ?? "https://ntfy.sh"}/${topic}`} target="_blank" rel="noreferrer">
+                    {`${ch?.ntfy_server ?? "https://ntfy.sh"}/${topic}`}</a>
+                  <Button className="!px-2 !py-0.5 text-xs" onClick={() => navigator.clipboard?.writeText(`${ch?.ntfy_server ?? "https://ntfy.sh"}/${topic}`)
+                    .then(() => setMsg({ kind: "info", text: "Link copied." })).catch(() => {})}>Copy link</Button>
+                  <Button className="!px-2 !py-0.5 text-xs" onClick={() => navigator.clipboard?.writeText(topic)
+                    .then(() => setMsg({ kind: "info", text: "Topic name copied." })).catch(() => {})}>Copy name</Button>
+                </div>
+                <p>Typing it instead? Topic names are case-sensitive — make sure your phone keyboard did not capitalise the first letter.</p>
+              </div>
+            )}
           </div>
         )}
         {channels.sms && ch?.configured.sms && <Field label="Mobile number"><input className={inputCls} value={phone} placeholder="+977 98…" onChange={(e) => setPhone(e.target.value)} /></Field>}

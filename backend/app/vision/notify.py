@@ -179,7 +179,7 @@ async def _send_sms(to: str, title: str, body: str) -> None:
         r.raise_for_status()
 
 
-NTFY_PRIORITY = {"CRITICAL": 5, "WARNING": 4, "WATCH": 3, "INFO": 3}       # 5 = urgent: long vibration, pops over other apps
+NTFY_PRIORITY = {"CRITICAL": 5, "WARNING": 5, "WATCH": 4, "INFO": 4}       # 4 = vibrate + pop-up; 5 = long vibration, over other apps
 NTFY_TAGS = {"CRITICAL": ["rotating_light"], "WARNING": ["warning"], "WATCH": ["droplet"], "INFO": ["information_source"]}
 
 

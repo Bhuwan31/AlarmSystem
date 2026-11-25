@@ -53,8 +53,8 @@ async def main() -> None:
             titles = [m.get("title") for m in msgs if m.get("event") == "message"]
             check("ntfy server has the test message", "AMHEWS test alert" in titles, str(titles))
             warn = next((m for m in msgs if m.get("title", "").startswith("FLOOD WARNING")), None)
-            check("ntfy server has the warning, high priority, Nepali text intact",
-                  warn is not None and warn.get("priority") == 4 and "बाढी" in warn.get("message", ""), str(warn)[:200])
+            check("ntfy server has the warning, top priority (vibrates), Nepali text intact",
+                  warn is not None and warn.get("priority") == 5 and "बाढी" in warn.get("message", ""), str(warn)[:200])
             r = await c.post(f"{API}/warnings/{wid}/cancel", headers=admin, json={"reason": "SIMULATED test finished"})
             check("all-clear also sent to the phone", (r.json().get("residents") or {}).get("sent") == 1, str(r.json())[:160])
     finally:

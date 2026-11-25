@@ -448,7 +448,7 @@ class SubscriptionBody(BaseModel):
     channels: dict[str, bool] = Field(default_factory=lambda: {"in_app": True})
     phone: str | None = Field(None, pattern=r"^\+?[0-9 ]{7,20}$")
     email: str | None = Field(None, max_length=200)
-    ntfy_topic: str | None = Field(None, pattern=r"^[A-Za-z0-9_-]{12,64}$")
+    ntfy_topic: str | None = Field(None, pattern=r"^[A-Za-z0-9_-]{8,64}$")
 
 
 def _sub(r) -> dict:
@@ -500,10 +500,10 @@ async def put_subscription(body: SubscriptionBody, user: User = Depends(current_
 @router.delete("/subscription")
 async def opt_out(user: User = Depends(current_user)):
     async with pool().acquire() as conn, conn.transaction():
-        await conn.execute("""update alert_subscriptions set consent = false, opted_out_at = now(), home = null, phone = null, ntfy_topic = null, updated_at = now()
+        await conn.execute("""update alert_subscriptions set consent = false, opted_out_at = now(), home = null, phone = null, updated_at = now()   -- ntfy topic kept: no alerts go to it while opted out
                               where user_id::text = $1""", user.id)
         await audit(conn, user.id, "subscription.opt_out", "user", user.id, {})
-    return {"subscribed": False, "note": "Opted out. Your saved home location and phone number were deleted."}
+    return {"subscribed": False, "note": "Opted out. Your saved home location and phone number were deleted. Your ntfy topic name is kept (nothing is sent to it) so your phone needs no change if you come back."}
 
 
 @router.post("/subscription/test")
@@ -516,7 +516,7 @@ async def test_my_phone(user: User = Depends(current_user)):
         rec = notify._rows([r])[0]
         out = {}
         for ch in notify.resolve_channels(rec, set(notify.CHANNELS)):
-            if ch != "in_app":
+            if ch != "in_app" and notify.configured(ch):          # skip channels this server cannot use
                 status, err = await notify.deliver(conn, ch, rec, "AMHEWS test alert",
                                                    "This is a test from your early-warning system. If you can read this on your "
                                                    "phone, alerts will reach you here.", "WARNING")
@@ -535,7 +535,8 @@ class PushBody(BaseModel):
 async def channels():
     """Which delivery channels this server can use (in-app always; others need provider settings)."""
     return {"configured": {c: notify.configured(c) for c in notify.CHANNELS},
-            "external_sending_enabled": get_settings().notify_external_enabled}
+            "external_sending_enabled": get_settings().notify_external_enabled,
+            "ntfy_server": get_settings().ntfy_server.rstrip("/")}
 
 
 @router.get("/push/public-key")
