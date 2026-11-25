@@ -15,7 +15,7 @@ from app.db import connect_kwargs
 from app.config import get_settings
 
 DIRS = [Path("/migrations"), Path(__file__).resolve().parents[2] / "supabase" / "migrations"]
-NEW_SINCE_INITDB = {"0006_lock_data_api.sql", "0007_ai_message_proposals.sql", "0008_warning_delivery.sql", "0009_ntfy_channel.sql"}
+NEW_SINCE_INITDB = {"0006_lock_data_api.sql", "0007_ai_message_proposals.sql", "0008_warning_delivery.sql", "0009_ntfy_channel.sql", "0010_warning_ai_message.sql", "0011_mass_alerts.sql"}
 
 
 async def main() -> int:

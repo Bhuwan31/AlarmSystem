@@ -322,6 +322,8 @@ async def queue_warning_broadcast(conn, w, actor: str, all_clear: bool = False, 
         level, radius = w["level"], WARNING_RADIUS_KM.get(w["level"], 10.0)
         title = {"WATCH": "FLOOD WATCH", "WARNING": "FLOOD WARNING", "CRITICAL": "EVACUATE NOW"}.get(level, level) + f" — {place}"
         message = TEMPLATES[level]["en"].format(place=place) + "\n" + TEMPLATES[level]["ne"].format(place=place)
+        if w.get("resident_message"):                                # written by the AI and/or edited by the operator
+            title, message = w.get("resident_title") or title, w["resident_message"]
         valid_until = w["valid_until"]
     bid = await conn.fetchval(
         """insert into area_broadcasts (target_type, center, radius_km, level, title, message, send_at, valid_until, status, exercise,

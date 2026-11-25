@@ -198,6 +198,9 @@ function Composer({ onSent, show }: { onSent: () => void; show: Broadcast | null
   const [sendAt, setSendAt] = useState("");
   const [validHours, setValidHours] = useState(12);
   const [preview, setPreview] = useState<number | null>(null);
+  const [note, setNote] = useState("");
+  const [writing, setWriting] = useState(false);
+  const [aiWritten, setAiWritten] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
 
@@ -223,6 +226,20 @@ function Composer({ onSent, show }: { onSent: () => void; show: Broadcast | null
     if (t === "province") setValue(areas?.provinces[2] ?? "Bagmati");
     if (t === "district") setValue("Kathmandu");
     if (t === "city") { setValue("Kathmandu"); setRadius(8); }
+  }
+
+  const areaLabel = target === "country" ? "Nepal (whole country)" : target === "province" ? `${value} Province`
+    : target === "district" ? `${value} district` : target === "city" ? `${value} (within ${radius} km)` : `the area within ${radius} km of the chosen map point`;
+
+  async function writeWithAi() {
+    setWriting(true); setMsg(null);
+    try {
+      const r = await api<{ title: string | null; message: string }>("/api/v1/visual-disaster/broadcasts/ai-draft",
+        { method: "POST", body: { area: areaLabel, level, hazard: "flood", note: note || null } });
+      if (r.title) setTitle(r.title);
+      setMessage(r.message); setAiWritten(true);
+      setMsg({ kind: "ok", text: "The AI wrote the message below. Read it, edit anything, then send." });
+    } catch (e) { setMsg({ kind: "error", text: (e as Error).message }); } finally { setWriting(false); }
   }
 
   async function doPreview() {
@@ -289,7 +306,13 @@ function Composer({ onSent, show }: { onSent: () => void; show: Broadcast | null
             <Field label="Valid for (hours)"><input type="number" min={0} max={168} className={inputCls} value={validHours} onChange={(e) => setValidHours(+e.target.value)} /></Field>
           </div>
           <Field label="Title"><input className={inputCls} value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} /></Field>
-          <Field label="Message" hint="The system adds the validity time and a source line.">
+          <div className="space-y-2 rounded-lg border border-violet-500/30 bg-violet-500/5 p-3">
+            <Field label="What is happening? (for the AI — optional)" hint="e.g. “Rapti river rising after 80 mm rain since morning, Bhalubang bridge closed”. The AI only uses what you write here plus the area and level.">
+              <textarea className={`${inputCls} h-16`} value={note} maxLength={600} onChange={(e) => setNote(e.target.value)} />
+            </Field>
+            <Button disabled={writing} onClick={writeWithAi}>{writing ? "AI is writing…" : "✦ Write the message with AI"}</Button>
+          </div>
+          <Field label={aiWritten ? "Message (✦ written by AI — edit freely)" : "Message"} hint="Sent exactly as shown. The system adds the validity time and a source line.">
             <textarea className={`${inputCls} h-32`} value={message} maxLength={2000} onChange={(e) => setMessage(e.target.value)} />
           </Field>
           <fieldset className="flex flex-wrap items-center gap-4 text-sm">

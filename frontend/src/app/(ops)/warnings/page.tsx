@@ -11,7 +11,9 @@ import { confirmTwice } from "@/lib/confirm";
 import { ago } from "@/lib/colors";
 import { useRivers, useWarnings } from "@/lib/hooks";
 
-type W = Warning & { proposed_by: string; rejection_reason: string | null; cancel_reason: string | null; valid_from: string | null };
+type W = Warning & { proposed_by: string; rejection_reason: string | null; cancel_reason: string | null; valid_from: string | null;
+  resident_title: string | null; resident_message: string | null; resident_message_source: "ai" | "template" | "edited" | null;
+  resident_message_model: string | null; resident_message_at: string | null };
 
 export default function WarningsPage() {
   const [tab, setTab] = useState<"current" | "history">("current");
@@ -51,6 +53,33 @@ function WarningCard({ w, onChange }: { w: W; onChange: () => void }) {
   const [busy, setBusy] = useState(false);
   const needed = 1;
   const alreadyApproved = !!user && w.approvers.includes(user.id);
+  const [title, setTitle] = useState(w.resident_title ?? "");
+  const [text, setText] = useState(w.resident_message ?? "");
+  const [writing, setWriting] = useState(false);
+  // keep the boxes in step with the server until the operator starts typing
+  const [touched, setTouched] = useState(false);
+  if (!touched && (w.resident_title ?? "") !== title && !writing) setTitle(w.resident_title ?? "");
+  if (!touched && (w.resident_message ?? "") !== text && !writing) setText(w.resident_message ?? "");
+  const editable = can(SEND_ROLE) && w.status === "PROPOSED";        // an active warning was already sent
+  const dirty = touched && (title !== (w.resident_title ?? "") || text !== (w.resident_message ?? ""));
+
+  async function writeWithAi() {
+    setWriting(true); setMsg(null);
+    try {
+      const r = await api<{ title: string; message: string; source: string; note?: string }>(`/api/v1/warnings/${w.id}/draft-message`, { method: "POST" });
+      setTitle(r.title); setText(r.message); setTouched(false);
+      setMsg(r.note ? { kind: "error", text: r.note } : { kind: "ok", text: "The AI wrote a new message. Edit it if needed, then approve." });
+      onChange();
+    } catch (e) { setMsg({ kind: "error", text: (e as Error).message }); } finally { setWriting(false); }
+  }
+
+  async function saveText() {
+    setBusy(true); setMsg(null);
+    try {
+      await api(`/api/v1/warnings/${w.id}/message`, { method: "PUT", body: { title, message: text } });
+      setTouched(false); setMsg({ kind: "ok", text: "Message saved." }); onChange();
+    } catch (e) { setMsg({ kind: "error", text: (e as Error).message }); } finally { setBusy(false); }
+  }
 
   async function act(path: string, body?: unknown) {
     setBusy(true); setMsg(null);
@@ -80,14 +109,36 @@ function WarningCard({ w, onChange }: { w: W; onChange: () => void }) {
           {w.exercise && <span className="rounded bg-amber-400/20 px-1.5 py-0.5 text-[10px] text-amber-300">EXERCISE</span>}
         </div>
       </div>
+      {editable ? (
+        <div className="mt-3 space-y-2 rounded-lg border border-sky-500/30 bg-sky-500/5 p-3 text-sm">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <b className="text-slate-200">Message residents will receive</b>
+            {w.resident_message_source === "ai" && !touched && <span className="rounded bg-violet-500/20 px-1.5 py-0.5 text-violet-200">✦ written by AI</span>}
+            {(w.resident_message_source === "edited" || touched) && <span className="rounded bg-sky-500/20 px-1.5 py-0.5 text-sky-200">edited</span>}
+            {w.resident_message_source === "template" && !touched && <span className="rounded bg-white/10 px-1.5 py-0.5 text-slate-300">standard text (AI unavailable)</span>}
+            <Button className="ml-auto !px-2 !py-0.5 text-xs" disabled={writing || busy} onClick={writeWithAi}>{writing ? "AI is writing…" : w.resident_message ? "✦ Rewrite with AI" : "✦ Write with AI"}</Button>
+          </div>
+          {!w.resident_message && !writing && !touched ? (
+            <p className="text-xs text-slate-400">The AI writes this message automatically within a few minutes of the proposal, from the station&apos;s river level, trend and rain. Press “Write with AI” to do it now.</p>
+          ) : (
+            <>
+              <input className={inputCls} value={title} maxLength={120} placeholder="Title" onChange={(e) => { setTitle(e.target.value); setTouched(true); }} aria-label="Message title" />
+              <textarea className={`${inputCls} h-36`} value={text} maxLength={2000} onChange={(e) => { setText(e.target.value); setTouched(true); }} aria-label="Message text" />
+              <p className="text-[11px] text-slate-400">Sent exactly as shown (English, then Nepali). The system adds the validity time and a source line{w.exercise ? ", and marks it as an exercise" : ""}.</p>
+              {dirty && <Button className="!px-2 !py-0.5 text-xs" disabled={busy} onClick={saveText}>Save edits</Button>}
+            </>
+          )}
+        </div>
+      ) : (
       <div className="mt-3 rounded-lg bg-black/20 p-3 text-sm">
         <div className="mb-1 flex gap-2 text-[11px]">
           {(["en", "ne"] as const).map((l) => (
             <button key={l} onClick={() => setLang(l)} className={`rounded px-1.5 ${lang === l ? "bg-white/15" : "text-slate-400"}`}>{l === "en" ? "English" : "नेपाली"}</button>
           ))}
         </div>
-        <p lang={lang}>{w.message[lang]}</p>
+        <p lang={lang}>{w.resident_message && lang === "en" ? w.resident_message : w.message[lang]}</p>
       </div>
+      )}
       <p className="mt-2 text-xs text-slate-400">Why: {w.reasons.join(" · ") || "—"}</p>
       {w.status === "PROPOSED" && <p className="mt-1 text-xs text-slate-400">Approvals: {w.approvers.length} of {needed}</p>}
       {w.rejection_reason && <p className="mt-1 text-xs text-red-300">Rejected: {w.rejection_reason}</p>}
@@ -102,7 +153,8 @@ function WarningCard({ w, onChange }: { w: W; onChange: () => void }) {
               <div className="flex flex-wrap gap-2">
                 {w.status === "PROPOSED" && (
                   <>
-                    <Button variant="primary" disabled={busy || alreadyApproved} onClick={() => { if (confirmTwice(`Approve this ${w.level} warning for ${w.station_name}? It will be sent to every resident near the station.`, w.level)) act("approve"); }}>
+                    <Button variant="primary" disabled={busy || alreadyApproved} onClick={() => { if (text.trim().length < 10) { setMsg({ kind: "error", text: "Write the message first (press “Write with AI” or type it)." }); return; }
+                      if (confirmTwice(`Approve this ${w.level} warning for ${w.station_name}? This message will be sent to every resident near the station:\n\n${title}\n${text.slice(0, 300)}${text.length > 300 ? "…" : ""}`, w.level)) act("approve", { title, message: text }); }}>
                       {alreadyApproved ? "You approved" : "Approve"}
                     </Button>
                     <Button variant="secondary" disabled={busy} onClick={() => setMode(mode === "reject" ? null : "reject")}>Reject…</Button>

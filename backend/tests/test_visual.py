@@ -334,6 +334,7 @@ def test_distribution_dedups_simulates_external_and_skips_unconfigured(monkeypat
     monkeypatch.setenv("SMTP_HOST", "smtp.example.test")
     monkeypatch.setenv("SMTP_FROM", "alerts@example.test")
     monkeypatch.setenv("NOTIFY_EXTERNAL_ENABLED", "false")
+    monkeypatch.setenv("MASS_ALERT_NTFY_TOPIC", "")               # personal deliveries only in this test
     try:
         conn = FakeConn()
         recips = [notify.Recipient("a", "a@x.test", None, {"in_app": True, "email": True}, 0.5),

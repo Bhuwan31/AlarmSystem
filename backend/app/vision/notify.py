@@ -128,8 +128,8 @@ def resolve_channels(r: Recipient, allowed: set[str]) -> list[str]:
         ch.remove("sms")
     if "email" in ch and not r.email:
         ch.remove("email")
-    if "ntfy" in ch and not r.ntfy_topic:
-        ch.remove("ntfy")
+    if "ntfy" in ch and (not r.ntfy_topic or r.ntfy_topic == get_settings().mass_alert_ntfy_topic):
+        ch.remove("ntfy")                                          # the mass topic already gets every message once
     return ch
 
 
@@ -281,4 +281,38 @@ async def distribute(conn, *, recipients: list[Recipient], level: str, title: st
                                    nid, status, err)
             counts[status] = counts.get(status, 0) + 1
     counts["recipients"] = len(recipients)
+    ref = f"incident:{incident_id}" if incident_id else f"broadcast:{broadcast_id}" if broadcast_id else None
+    if ref:
+        generic = Recipient("", None, None, {}, None)               # text without a personal distance
+        mass = await mass_send(conn, ref, level, title, body_for(generic), all_clear)
+        if mass:
+            counts["all_phones"] = mass
     return counts
+
+
+async def mass_send(conn, ref: str, level: str, title: str, body: str, all_clear: bool = False) -> str | None:
+    """"Send to all phones": publish each sent message once to the mass channel. Today: one ntfy topic
+    (MASS_ALERT_NTFY_TOPIC). Later this is the single place to switch to cell broadcast for every phone in the area.
+    Returns the status, or None when no mass channel is configured or this message was already published."""
+    s = get_settings()
+    topic = s.mass_alert_ntfy_topic.strip()
+    if not topic:
+        return None
+    body = body.replace("{distance}", "near the affected area")
+    mid = await conn.fetchval(
+        """insert into mass_alerts (ref, level, all_clear, channel, status, title, body) values ($1, $2, $3, 'ntfy', 'simulated', $4, $5)
+           on conflict (ref, level, all_clear) do nothing returning id""", ref, level, all_clear, title, body)
+    if mid is None:
+        return None                                                # already published: a re-send never repeats it
+    status, err = "simulated", None
+    if not s.notify_external_enabled:
+        log.info("SIMULATED mass alert %s: %s", ref, title)
+    else:
+        try:
+            await send_ntfy(topic, title, body, level)
+            status = "sent"
+        except Exception as e:  # noqa: BLE001 - recorded; the personal deliveries already happened
+            status, err = "failed", str(e)[:300]
+            log.warning("mass alert %s failed: %s", ref, e)
+    await conn.execute("update mass_alerts set status = $2, error = $3 where id = $1", mid, status, err)
+    return status

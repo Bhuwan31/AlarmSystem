@@ -43,7 +43,14 @@ async def main() -> None:
             check("operator proposes a WARNING", r.status_code == 200 and wid, str(r.status_code))
             r = await c.post(f"{API}/warnings/{wid}/approve", headers=people["Far"][1])
             check("a resident cannot approve", r.status_code == 403, str(r.status_code))
-            r = await c.post(f"{API}/warnings/{wid}/approve", headers=oper)
+            r = await c.post(f"{API}/warnings/{wid}/draft-message", headers=oper)
+            d = r.json()
+            check("AI writes the residents' message (English + Nepali)", r.status_code == 200 and d["source"] in ("ai", "template")
+                  and any("ऀ" <= ch <= "ॿ" for ch in d["message"]), f"source={d.get('source')} model={d.get('model')}")
+            edited_title = f"FLOOD WARNING – {st['name']}"
+            edited = ("EDITED BY OPERATOR: SIMULATED test, the river is rising. Move animals and valuables to higher ground now.\n"
+                      "बाढी चेतावनी: नदी बढ्दैछ। पशु र सामान अग्लो ठाउँमा सार्नुहोस्।")
+            r = await c.post(f"{API}/warnings/{wid}/approve", headers=oper, json={"title": edited_title, "message": edited})
             out = r.json()
             res = out.get("residents") or {}
             check("operator approves and activates it", r.status_code == 200 and out["status"] == "ACTIVE", str(out)[:200])
@@ -52,7 +59,10 @@ async def main() -> None:
             inbox = (await c.get(f"{API}/visual-disaster/alerts", headers=people["Near"][1])).json()
             check("near resident has it in the app inbox", any(st["name"] in a["title"] and "FLOOD WARNING" in a["title"] for a in inbox),
                   inbox[0]["title"] if inbox else "empty")
-            check("message has English and Nepali text", bool(inbox) and "बाढी" in inbox[0]["body"] and "EXERCISE" in inbox[0]["body"])
+            check("residents get exactly the operator's edited text", bool(inbox) and "EDITED BY OPERATOR" in inbox[0]["body"]
+                  and "बाढी" in inbox[0]["body"] and "EXERCISE" in inbox[0]["body"])
+            src = await db.fetchval("select resident_message_source from warnings where id = $1::uuid", wid)
+            check("warning records that the message was edited", src == "edited", str(src))
             far = (await c.get(f"{API}/visual-disaster/alerts", headers=people["Far"][1])).json()
             check("far resident got nothing", far == [], f"{len(far)} alerts")
 

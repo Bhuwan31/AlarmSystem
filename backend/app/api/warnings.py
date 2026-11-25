@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from app.auth import SEND_ROLE, User, require
 from app.db import audit, pool
 from app.devices import sirens
+from app.ai import writer
 from app.vision import service as delivery
 from app.warnings import state_machine as sm
 from app.warnings.templates import render
@@ -23,6 +24,49 @@ class ManualWarning(BaseModel):
 
 class Reason(BaseModel):
     reason: str = Field(min_length=3, max_length=500)
+
+
+class ResidentMessage(BaseModel):
+    title: str = Field(min_length=3, max_length=120)
+    message: str = Field(min_length=10, max_length=2000)
+
+
+class ApproveBody(BaseModel):
+    title: str | None = Field(None, min_length=3, max_length=120)
+    message: str | None = Field(None, min_length=10, max_length=2000)
+
+
+async def _save_message(conn, wid, title: str, message: str, user_id: str) -> None:
+    """Store the operator's version; 'edited' only when it differs from what the AI / template wrote."""
+    await conn.execute(
+        """update warnings set resident_title = $2, resident_message = $3, updated_at = now(),
+             resident_message_source = case when resident_title is not distinct from $2 and resident_message is not distinct from $3
+                                            then resident_message_source else 'edited' end where id = $1""", wid, title, message)
+    await audit(conn, user_id, "warning.message_edit", "warning", str(wid), {"title": title})
+
+
+@router.post("/{wid}/draft-message")
+async def draft_message(wid: str, user: User = Depends(require(SEND_ROLE))):
+    """(Re)write the residents' message with the AI from this station's current data."""
+    async with pool().acquire() as conn:
+        w = await conn.fetchrow("select * from warnings where id = $1", wid)
+        if w is None:
+            raise HTTPException(404, "warning not found")
+        out = await writer.draft_for_warning(conn, w)
+        await audit(conn, user.id, "warning.message_ai", "warning", wid, {"source": out["source"], "model": out["model"]})
+    if out["source"] != "ai":
+        out["note"] = "The AI could not write it right now, so the standard text was used. You can edit it or try again."
+    return out
+
+
+@router.put("/{wid}/message")
+async def save_message(wid: str, body: ResidentMessage, user: User = Depends(require(SEND_ROLE))):
+    async with pool().acquire() as conn, conn.transaction():
+        w = await _load(conn, wid)
+        if w["status"] not in ("PROPOSED", "ACTIVE"):
+            raise HTTPException(409, f"the warning is {w['status'].lower()}")
+        await _save_message(conn, w["id"], body.title, body.message, user.id)
+    return {"id": wid, "saved": True}
 
 
 async def _load(conn, wid):
@@ -58,10 +102,13 @@ async def create_manual(body: ManualWarning, user: User = Depends(require("opera
 
 
 @router.post("/{wid}/approve")
-async def approve(wid: str, user: User = Depends(require(SEND_ROLE, mfa=False))):
+async def approve(wid: str, body: ApproveBody | None = None, user: User = Depends(require(SEND_ROLE, mfa=False))):
     bid = None
     async with pool().acquire() as conn, conn.transaction():
         w = await _load(conn, wid)
+        if body and body.title and body.message:                     # what the operator sees on screen is what is sent
+            await _save_message(conn, w["id"], body.title, body.message, user.id)
+            w = await _load(conn, wid)
         profile = await conn.fetchrow("select policies from deployment_profile where id = 1")
         approvers = set(await conn.fetchval("select coalesce(array_agg(approver), '{}') from warning_approvals where warning_id = $1", w["id"]))
         try:

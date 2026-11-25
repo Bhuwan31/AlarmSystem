@@ -596,6 +596,26 @@ def _target(b: BroadcastBody) -> tuple[str | None, float | None, float | None, f
     return None, b.latitude, b.longitude, b.radius_km
 
 
+class AiDraftBody(BaseModel):
+    area: str = Field(min_length=2, max_length=120)
+    level: str = Field(pattern="^(INFO|WATCH|WARNING|CRITICAL)$")
+    hazard: str = Field("flood", max_length=40)
+    note: str | None = Field(None, max_length=600)
+
+
+@router.post("/broadcasts/ai-draft")
+async def ai_draft_broadcast(body: AiDraftBody, user: User = Depends(require(SEND_ROLE))):
+    """The AI writes a message from what the operator knows; the operator edits it before sending."""
+    from app.ai import writer
+    facts = {"level": body.level, "place": body.area, "hazard": body.hazard,
+             "what_the_operator_knows": body.note or "(no extra details given)"}
+    try:
+        out = await writer.write(facts)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(503, f"the AI could not write the message right now: {str(e)[:160]}") from e
+    return out
+
+
 @router.post("/broadcasts/preview")
 async def preview_broadcast(body: BroadcastBody, user: User = Depends(require(SEND_ROLE))):
     value, la, lo, r = _target(body)
